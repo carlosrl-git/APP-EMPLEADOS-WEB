@@ -1,0 +1,53 @@
+﻿{% extends 'base.html' %}
+{% block title %}Inicio | App Empleados{% endblock %}
+{% block content %}
+<div class="top-actions">
+<div>
+<h1 class="page-title">Inicio</h1>
+<p class="page-subtitle">Bienvenido, <strong>{{ username }}</strong>. Este es el panel principal del sistema.</p>
+</div>
+</div>
+
+<div class="actions">
+<div class="card" style="padding:20px; min-width:220px;">
+<h2 style="margin:0 0 10px 0;">Usuarios</h2>
+<p class="subtitle" style="margin:0;">Total registrados</p>
+<p style="font-size:32px; font-weight:800; margin:12px 0 0 0;">{{ total_users }}</p>
+</div>
+
+<div class="card" style="padding:20px; min-width:220px;">
+<h2 style="margin:0 0 10px 0;">Bloqueados</h2>
+<p class="subtitle" style="margin:0;">Por intentos fallidos</p>
+<p style="font-size:32px; font-weight:800; margin:12px 0 0 0;">{{ blocked }}</p>
+</div>
+
+<div class="card" style="padding:20px; min-width:220px;">
+<h2 style="margin:0 0 10px 0;">Resets</h2>
+<p class="subtitle" style="margin:0;">Solicitudes pendientes</p>
+<p style="font-size:32px; font-weight:800; margin:12px 0 0 0;">{{ resets }}</p>
+</div>
+
+<div class="card" style="padding:20px; min-width:220px;">
+<h2 style="margin:0 0 10px 0;">Trabajadores</h2>
+<p class="subtitle" style="margin:0;">Personal registrado</p>
+<p style="font-size:32px; font-weight:800; margin:12px 0 0 0;">{{ total_trabajadores }}</p>
+</div>
+
+<div class="card" style="padding:20px; min-width:220px;">
+<h2 style="margin:0 0 10px 0;">Incidencias</h2>
+<p class="subtitle" style="margin:0;">Abiertas</p>
+<p style="font-size:32px; font-weight:800; margin:12px 0 0 0;">{{ incidencias_abiertas }}</p>
+</div>
+
+<div class="card" style="padding:20px; min-width:220px;">
+<h2 style="margin:0 0 10px 0;">Tareas</h2>
+<p class="subtitle" style="margin:0;">Pendientes</p>
+<p style="font-size:32px; font-weight:800; margin:12px 0 0 0;">{{ tareas_pendientes }}</p>
+</div>
+</div>
+
+<div class="panel" style="margin-top:24px;">
+<h2>Estado del sistema</h2>
+<p class="muted">La aplicación web ya está conectada a la base de datos cloud y preparada para crecer por módulos.</p>
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+﻿{% extends 'base.html' %}
+{% block title %}Nueva incidencia | App Empleados{% endblock %}
+{% block content %}
+<div class="top-actions">
+<div>
+<h1 class="page-title">Nueva incidencia</h1>
+<p class="page-subtitle">Registrar una incidencia y asociarla a un trabajador.</p>
+</div>
+<a href="/incidencias" class="btn-inline secondary">Volver</a>
+</div>
+
+<form method="post" action="/incidencias/nueva" style="max-width:780px;">
+<textarea class="input" name="descripcion" placeholder="Describe la incidencia" required style="min-height:140px; resize:vertical;"></textarea>
+
+<select class="input" name="trabajador_id">
+<option value="">Sin trabajador asociado</option>
+{% for t in trabajadores %}
+<option value="{{ t.id }}">{{ t.nombre }} {{ t.apellidos or '' }}</option>
+{% endfor %}
+</select>
+
+<select class="input" name="estado">
+<option value="abierta">Abierta</option>
+<option value="en_proceso">En proceso</option>
+<option value="completada">Completada</option>
+</select>
+
+<button class="btn" type="submit">Guardar incidencia</button>
+</form>
+
+{% if msg %}<p class="msg">{{ msg }}</p>{% endif %}
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+{% endblock %}

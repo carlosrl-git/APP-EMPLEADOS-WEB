@@ -1,0 +1,27 @@
+﻿{% extends 'base.html' %}
+{% block title %}Nuevo usuario | App Empleados{% endblock %}
+{% block content %}
+<div class="top-actions">
+<div>
+<h1 class="page-title">Nuevo usuario</h1>
+<p class="page-subtitle">Crear una nueva cuenta de acceso al sistema.</p>
+</div>
+<a href="/usuarios" class="btn-inline secondary">Volver</a>
+</div>
+
+<form method="post" action="/usuarios/nuevo" style="max-width:780px;">
+<input class="input" type="text" name="username_nuevo" placeholder="Nombre de usuario" required>
+<input class="input" type="email" name="email" placeholder="Email" required>
+<input class="input" type="password" name="password" placeholder="Contraseña" required>
+
+<select class="input" name="rol">
+<option value="usuario">Usuario</option>
+<option value="admin">Admin</option>
+</select>
+
+<button class="btn" type="submit">Guardar usuario</button>
+</form>
+
+{% if msg %}<p class="msg">{{ msg }}</p>{% endif %}
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+{% endblock %}

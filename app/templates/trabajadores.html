@@ -1,0 +1,68 @@
+﻿{% extends 'base.html' %}
+{% block title %}Trabajadores | App Empleados{% endblock %}
+{% block content %}
+<div class="top-actions">
+<div>
+<h1 class="page-title">Trabajadores</h1>
+<p class="page-subtitle">Listado del personal registrado y gestión completa del módulo.</p>
+</div>
+<div style="display:flex; gap:12px;">
+{% if rol == 'admin' %}
+<a href="/trabajadores/nuevo" class="btn-inline">Nuevo trabajador</a>
+{% endif %}
+</div>
+</div>
+
+<form method="get" action="/trabajadores" style="margin:18px 0 22px 0; display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+<input class="input" style="max-width:320px; margin:0;" type="text" name="q" value="{{ q }}" placeholder="Buscar por nombre o apellidos">
+<select class="input" style="max-width:260px; margin:0;" name="departamento_id">
+<option value="">Todos los departamentos</option>
+{% for d in departamentos %}
+<option value="{{ d.id }}" {% if departamento_id and departamento_id|int == d.id %}selected{% endif %}>{{ d.nombre }}</option>
+{% endfor %}
+</select>
+<button class="btn" style="width:auto; min-width:150px;" type="submit">Filtrar</button>
+<a href="/trabajadores" class="btn-inline secondary">Limpiar</a>
+</form>
+
+<div style="overflow-x:auto; margin-top:10px;">
+<table style="width:100%; border-collapse:collapse; min-width:1100px;">
+<thead>
+<tr style="background:#161616;">
+<th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">ID</th>
+<th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Nombre</th>
+<th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Apellidos</th>
+<th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Puesto</th>
+<th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Departamento</th>
+<th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Email</th>
+{% if rol == 'admin' %}
+<th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Acciones</th>
+{% endif %}
+</tr>
+</thead>
+<tbody>
+{% for t in trabajadores %}
+<tr>
+<td style="padding:14px; border-bottom:1px solid #242424;">{{ t.id }}</td>
+<td style="padding:14px; border-bottom:1px solid #242424;"><a href="/trabajadores/{{ t.id }}" style="color:#fff; text-decoration:none; font-weight:700;">{{ t.nombre or '-' }}</a></td>
+<td style="padding:14px; border-bottom:1px solid #242424;">{{ t.apellidos or '-' }}</td>
+<td style="padding:14px; border-bottom:1px solid #242424;">{{ t.puesto or '-' }}</td>
+<td style="padding:14px; border-bottom:1px solid #242424;">{{ t.departamento or '-' }}</td>
+<td style="padding:14px; border-bottom:1px solid #242424;">{{ t.email or '-' }}</td>
+{% if rol == 'admin' %}
+<td style="padding:14px; border-bottom:1px solid #242424; white-space:nowrap;">
+<a href="/trabajadores/editar/{{ t.id }}" class="btn-inline">Editar</a>
+<a href="/trabajadores/eliminar/{{ t.id }}" class="btn-inline secondary">Eliminar</a>
+</td>
+{% endif %}
+</tr>
+{% endfor %}
+{% if not trabajadores %}
+<tr>
+<td colspan="7" style="padding:18px; border-bottom:1px solid #242424;">No se encontraron trabajadores con ese filtro.</td>
+</tr>
+{% endif %}
+</tbody>
+</table>
+</div>
+{% endblock %}

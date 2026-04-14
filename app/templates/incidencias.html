@@ -1,0 +1,67 @@
+﻿{% extends 'base.html' %}
+{% block title %}Incidencias | App Empleados{% endblock %}
+{% block content %}
+<div class="top-actions">
+<div>
+<h1 class="page-title">Incidencias</h1>
+<p class="page-subtitle">Consulta y control de incidencias registradas en el sistema.</p>
+</div>
+<div style="display:flex; gap:12px;">
+{% if rol == 'admin' %}
+<a href="/incidencias/nueva" class="btn-inline">Nueva incidencia</a>
+{% endif %}
+<a href="/dashboard" class="btn-inline secondary">Volver</a>
+</div>
+</div>
+
+<form method="get" action="/incidencias" style="margin:18px 0 22px 0; display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+<select class="input" style="max-width:260px; margin:0;" name="estado">
+<option value="">Todos los estados</option>
+<option value="abierta" {% if estado == 'abierta' %}selected{% endif %}>Abierta</option>
+<option value="en_proceso" {% if estado == 'en_proceso' %}selected{% endif %}>En proceso</option>
+<option value="completada" {% if estado == 'completada' %}selected{% endif %}>Completada</option>
+</select>
+<button class="btn" style="width:auto; min-width:150px;" type="submit">Filtrar</button>
+<a href="/incidencias" class="btn-inline secondary">Limpiar</a>
+</form>
+
+<div style="overflow-x:auto; margin-top:10px;">
+<table style="width:100%; border-collapse:collapse; min-width:1150px;">
+<thead>
+<tr style="background:#161616;">
+<th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">ID</th>
+<th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Descripción</th>
+<th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Trabajador</th>
+<th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Estado</th>
+<th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Fecha</th>
+{% if rol == 'admin' %}
+<th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Acciones</th>
+{% endif %}
+</tr>
+</thead>
+<tbody>
+{% for i in incidencias %}
+<tr>
+<td style="padding:14px; border-bottom:1px solid #242424;">{{ i.id }}</td>
+<td style="padding:14px; border-bottom:1px solid #242424;">{{ i.descripcion }}</td>
+<td style="padding:14px; border-bottom:1px solid #242424;">{{ i.nombre or '-' }} {{ i.apellidos or '' }}</td>
+<td style="padding:14px; border-bottom:1px solid #242424;">{{ i.estado or '-' }}</td>
+<td style="padding:14px; border-bottom:1px solid #242424;">{{ i.fecha }}</td>
+{% if rol == 'admin' %}
+<td style="padding:14px; border-bottom:1px solid #242424; white-space:nowrap;">
+<a href="/incidencias/estado/{{ i.id }}/abierta" class="btn-inline secondary">Abrir</a>
+<a href="/incidencias/estado/{{ i.id }}/en_proceso" class="btn-inline">Proceso</a>
+<a href="/incidencias/estado/{{ i.id }}/completada" class="btn-inline secondary">Cerrar</a>
+</td>
+{% endif %}
+</tr>
+{% endfor %}
+{% if not incidencias %}
+<tr>
+<td colspan="6" style="padding:18px; border-bottom:1px solid #242424;">No hay incidencias para ese filtro.</td>
+</tr>
+{% endif %}
+</tbody>
+</table>
+</div>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% block title %}Ausencias | App Empleados{% endblock %}
+{% block content %}
+<div class="top-actions">
+  <div>
+    <h1 class="page-title">Ausencias</h1>
+    <p class="page-subtitle">Registro y control de ausencias del personal.</p>
+  </div>
+  <div style="display:flex; gap:12px;">
+    <a href="/dashboard" class="btn-inline secondary">Volver</a>
+  </div>
+</div>
+
+<div class="card" style="padding:22px; margin-bottom:22px;">
+  <h2 style="margin:0 0 16px 0;">Registrar ausencia</h2>
+  <form method="post" action="/ausencias/nueva" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; align-items:end;">
+    <div>
+      <label style="display:block; margin-bottom:8px;">Empleado</label>
+      <select name="trabajador_id" class="input" required>
+        <option value="">Selecciona un empleado</option>
+        {% for t in trabajadores %}
+        <option value="{{ t.id }}">{{ t.nombre }} {{ t.apellidos or '' }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label style="display:block; margin-bottom:8px;">Tipo</label>
+      <select name="tipo" class="input" required>
+        <option value="vacaciones">Vacaciones</option>
+        <option value="baja">Baja</option>
+        <option value="permiso">Permiso</option>
+        <option value="falta">Falta</option>
+        <option value="otro">Otro</option>
+      </select>
+    </div>
+    <div>
+      <label style="display:block; margin-bottom:8px;">Fecha inicio</label>
+      <input type="date" name="fecha_inicio" class="input" required>
+    </div>
+    <div>
+      <label style="display:block; margin-bottom:8px;">Fecha fin</label>
+      <input type="date" name="fecha_fin" class="input" required>
+    </div>
+    <div>
+      <label style="display:block; margin-bottom:8px;">Estado</label>
+      <select name="estado" class="input">
+        <option value="pendiente">Pendiente</option>
+        <option value="aprobada">Aprobada</option>
+        <option value="rechazada">Rechazada</option>
+      </select>
+    </div>
+    <div style="grid-column:1/-1;">
+      <label style="display:block; margin-bottom:8px;">Motivo</label>
+      <input type="text" name="motivo" class="input" placeholder="Motivo de la ausencia">
+    </div>
+    <div style="grid-column:1/-1;">
+      <button type="submit" class="btn" style="width:auto; min-width:180px;">Guardar ausencia</button>
+    </div>
+  </form>
+</div>
+
+<div class="card" style="padding:22px;">
+  <h2 style="margin:0 0 16px 0;">Listado de ausencias</h2>
+  <div style="overflow-x:auto;">
+    <table style="width:100%; border-collapse:collapse; min-width:1150px;">
+      <thead>
+        <tr style="background:#161616;">
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">ID</th>
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Empleado</th>
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Tipo</th>
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Inicio</th>
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Fin</th>
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Motivo</th>
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Estado</th>
+          {% if rol == 'admin' %}
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Acciones</th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in ausencias %}
+        <tr>
+          <td style="padding:14px; border-bottom:1px solid #242424;">{{ a.id }}</td>
+          <td style="padding:14px; border-bottom:1px solid #242424;">{{ a.nombre or '-' }} {{ a.apellidos or '' }}</td>
+          <td style="padding:14px; border-bottom:1px solid #242424;">{{ a.tipo or '-' }}</td>
+          <td style="padding:14px; border-bottom:1px solid #242424;">{{ a.fecha_inicio }}</td>
+          <td style="padding:14px; border-bottom:1px solid #242424;">{{ a.fecha_fin }}</td>
+          <td style="padding:14px; border-bottom:1px solid #242424;">{{ a.motivo or '-' }}</td>
+          <td style="padding:14px; border-bottom:1px solid #242424;">{{ a.estado or '-' }}</td>
+          {% if rol == 'admin' %}
+          <td style="padding:14px; border-bottom:1px solid #242424; white-space:nowrap;">
+            <a href="/ausencias/eliminar/{{ a.id }}" class="btn-inline secondary">Eliminar</a>
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+        {% if not ausencias %}
+        <tr>
+          <td colspan="8" style="padding:18px; border-bottom:1px solid #242424;">No hay ausencias registradas todavía.</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

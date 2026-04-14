@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}Horas | App Empleados{% endblock %}
+{% block content %}
+<div class="top-actions">
+  <div>
+    <h1 class="page-title">Horas</h1>
+    <p class="page-subtitle">Registro y control de horas trabajadas y horas extra.</p>
+  </div>
+  <div style="display:flex; gap:12px;">
+    <a href="/dashboard" class="btn-inline secondary">Volver</a>
+  </div>
+</div>
+
+<div class="card" style="padding:22px; margin-bottom:22px;">
+  <h2 style="margin:0 0 16px 0;">Registrar horas</h2>
+  <form method="post" action="/horas/nueva" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; align-items:end;">
+    <div>
+      <label style="display:block; margin-bottom:8px;">Empleado</label>
+      <select name="trabajador_id" class="input" required>
+        <option value="">Selecciona un empleado</option>
+        {% for t in trabajadores %}
+        <option value="{{ t.id }}">{{ t.nombre }} {{ t.apellidos or '' }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label style="display:block; margin-bottom:8px;">Fecha</label>
+      <input type="date" name="fecha" class="input" required>
+    </div>
+    <div>
+      <label style="display:block; margin-bottom:8px;">Horas</label>
+      <input type="number" step="0.01" name="horas" class="input" required placeholder="Ej. 8">
+    </div>
+    <div>
+      <label style="display:block; margin-bottom:8px;">Horas extra</label>
+      <input type="number" step="0.01" name="horas_extra" class="input" value="0">
+    </div>
+    <div>
+      <label style="display:block; margin-bottom:8px;">Tipo</label>
+      <select name="tipo" class="input">
+        <option value="normal">Normal</option>
+        <option value="extra">Extra</option>
+        <option value="festivo">Festivo</option>
+        <option value="nocturno">Nocturno</option>
+      </select>
+    </div>
+    <div style="grid-column:1/-1;">
+      <button type="submit" class="btn" style="width:auto; min-width:180px;">Guardar horas</button>
+    </div>
+  </form>
+</div>
+
+<div class="card" style="padding:22px;">
+  <h2 style="margin:0 0 16px 0;">Listado de horas</h2>
+  <div style="overflow-x:auto;">
+    <table style="width:100%; border-collapse:collapse; min-width:1100px;">
+      <thead>
+        <tr style="background:#161616;">
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">ID</th>
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Empleado</th>
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Fecha</th>
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Horas</th>
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Horas extra</th>
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Tipo</th>
+          {% if rol == 'admin' %}
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Acciones</th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for h in horas %}
+        <tr>
+          <td style="padding:14px; border-bottom:1px solid #242424;">{{ h.id }}</td>
+          <td style="padding:14px; border-bottom:1px solid #242424;">{{ h.nombre or '-' }} {{ h.apellidos or '' }}</td>
+          <td style="padding:14px; border-bottom:1px solid #242424;">{{ h.fecha }}</td>
+          <td style="padding:14px; border-bottom:1px solid #242424;">{{ h.horas }}</td>
+          <td style="padding:14px; border-bottom:1px solid #242424;">{{ h.horas_extra }}</td>
+          <td style="padding:14px; border-bottom:1px solid #242424;">{{ h.tipo or '-' }}</td>
+          {% if rol == 'admin' %}
+          <td style="padding:14px; border-bottom:1px solid #242424; white-space:nowrap;">
+            <a href="/horas/eliminar/{{ h.id }}" class="btn-inline secondary">Eliminar</a>
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+        {% if not horas %}
+        <tr>
+          <td colspan="7" style="padding:18px; border-bottom:1px solid #242424;">No hay registros de horas todavía.</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

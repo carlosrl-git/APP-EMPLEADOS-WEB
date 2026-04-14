@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+{% block title %}Ficha trabajador | App Empleados{% endblock %}
+{% block content %}
+<div class="top-actions">
+  <div>
+    <h1 class="page-title">{{ t.nombre }} {{ t.apellidos or '' }}</h1>
+    <p class="page-subtitle">{{ t.departamento or 'Sin departamento' }}</p>
+  </div>
+  <div style="display:flex; gap:12px; flex-wrap:wrap;">
+    <a href="/trabajadores" class="btn-inline secondary">Volver</a>
+  </div>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:20px;">
+  <div class="card" style="padding:22px;">
+    <h2 style="margin:0 0 14px 0;">Datos personales</h2>
+    <p><strong>ID:</strong> {{ t.id }}</p>
+    <p><strong>Nombre:</strong> {{ t.nombre or '-' }} {{ t.apellidos or '' }}</p>
+    <p><strong>DNI:</strong> {{ t.dni or '-' }}</p>
+    <p><strong>Email:</strong> {{ t.email or '-' }}</p>
+    <p><strong>Departamento:</strong> {{ t.departamento or '-' }}</p>
+  </div>
+
+  <div class="card" style="padding:22px;">
+    <h2 style="margin:0 0 14px 0;">Ausencias</h2>
+    {% if ausencias %}
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        {% for a in ausencias %}
+        <div style="padding:12px 14px; background:#161616; border:1px solid #2a2a2a; border-radius:12px;">
+          <div style="font-weight:700; margin-bottom:6px;">{{ a.tipo or '-' }}</div>
+          <div class="muted">{{ a.fecha_inicio }} → {{ a.fecha_fin }} · Estado: {{ a.estado or '-' }}</div>
+          <div>{{ a.motivo or '' }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="muted">No hay ausencias registradas.</p>
+    {% endif %}
+  </div>
+
+  <div class="card" style="padding:22px;">
+    <h2 style="margin:0 0 14px 0;">Horas</h2>
+    {% if horas %}
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        {% for h in horas %}
+        <div style="padding:12px 14px; background:#161616; border:1px solid #2a2a2a; border-radius:12px;">
+          <div style="font-weight:700; margin-bottom:6px;">{{ h.fecha }}</div>
+          <div class="muted">Horas: {{ h.horas or 0 }} · Extra: {{ h.horas_extra or 0 }} · Tipo: {{ h.tipo or '-' }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="muted">No hay horas registradas.</p>
+    {% endif %}
+  </div>
+
+  <div class="card" style="padding:22px;">
+    <h2 style="margin:0 0 14px 0;">Incidencias</h2>
+    {% if incidencias %}
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        {% for i in incidencias %}
+        <div style="padding:12px 14px; background:#161616; border:1px solid #2a2a2a; border-radius:12px;">
+          <div style="font-weight:700; margin-bottom:6px;">{{ i.descripcion }}</div>
+          <div class="muted">Estado: {{ i.estado }} · Fecha: {{ i.fecha }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="muted">No hay incidencias registradas.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card" style="padding:22px; margin-top:20px;">
+  <h2 style="margin:0 0 14px 0;">Tareas</h2>
+  {% if tareas %}
+    <div style="overflow-x:auto;">
+      <table style="width:100%; border-collapse:collapse; min-width:1000px;">
+        <thead>
+          <tr style="background:#161616;">
+            <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Descripción</th>
+            <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Estado</th>
+            <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Resultado</th>
+            <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Evaluación</th>
+            <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Asignación</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for tarea in tareas %}
+          <tr>
+            <td style="padding:14px; border-bottom:1px solid #242424;">{{ tarea.descripcion or '-' }}</td>
+            <td style="padding:14px; border-bottom:1px solid #242424;">{{ tarea.estado or '-' }}</td>
+            <td style="padding:14px; border-bottom:1px solid #242424;">{{ tarea.resultado or '-' }}</td>
+            <td style="padding:14px; border-bottom:1px solid #242424;">{{ tarea.evaluacion or '-' }}</td>
+            <td style="padding:14px; border-bottom:1px solid #242424;">{{ tarea.fecha_asignacion or '-' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted">No hay tareas registradas.</p>
+  {% endif %}
+</div>
+
+<div class="card" style="padding:22px; margin-top:20px;">
+  <h2 style="margin:0 0 14px 0;">Turnos</h2>
+  {% if turnos %}
+    <div style="overflow-x:auto;">
+      <table style="width:100%; border-collapse:collapse; min-width:1000px;">
+        <thead>
+          <tr style="background:#161616;">
+            <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Fecha</th>
+            <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Turno</th>
+            <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Inicio</th>
+            <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Fin</th>
+            <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Zona</th>
+            <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for tu in turnos %}
+          <tr>
+            <td style="padding:14px; border-bottom:1px solid #242424;">{{ tu.fecha }}</td>
+            <td style="padding:14px; border-bottom:1px solid #242424;">{{ tu.turno or '-' }}</td>
+            <td style="padding:14px; border-bottom:1px solid #242424;">{{ tu.hora_inicio or '-' }}</td>
+            <td style="padding:14px; border-bottom:1px solid #242424;">{{ tu.hora_fin or '-' }}</td>
+            <td style="padding:14px; border-bottom:1px solid #242424;">{{ tu.zona or '-' }}</td>
+            <td style="padding:14px; border-bottom:1px solid #242424;">{{ tu.estado or '-' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted">No hay turnos registrados.</p>
+  {% endif %}
+</div>
+
+<div class="card" style="padding:22px; margin-top:20px;">
+  <h2 style="margin:0 0 14px 0;">Rutas / Jornadas</h2>
+  {% if rutas %}
+    <div style="overflow-x:auto;">
+      <table style="width:100%; border-collapse:collapse; min-width:1000px;">
+        <thead>
+          <tr style="background:#161616;">
+            <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Fecha</th>
+            <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Inicio</th>
+            <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Fin</th>
+            <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Horas</th>
+            <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Observaciones</th>
+            <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rutas %}
+          <tr>
+            <td style="padding:14px; border-bottom:1px solid #242424;">{{ r.fecha }}</td>
+            <td style="padding:14px; border-bottom:1px solid #242424;">{{ r.hora_inicio_jornada or '-' }}</td>
+            <td style="padding:14px; border-bottom:1px solid #242424;">{{ r.hora_fin_jornada or '-' }}</td>
+            <td style="padding:14px; border-bottom:1px solid #242424;">{{ r.total_horas or '-' }}</td>
+            <td style="padding:14px; border-bottom:1px solid #242424;">{{ r.observaciones_generales or '-' }}</td>
+            <td style="padding:14px; border-bottom:1px solid #242424; white-space:nowrap;">
+              <a href="/rutas/{{ r.id }}" class="btn-inline">Abrir jornada</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted">No hay rutas o jornadas registradas.</p>
+  {% endif %}
+</div>
+{% endblock %}

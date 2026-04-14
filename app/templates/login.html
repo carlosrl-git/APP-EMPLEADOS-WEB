@@ -1,0 +1,22 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Login</title>
+<link rel="stylesheet" href="{{ url_for('static', path='styles.css') }}">
+</head>
+<body>
+<div class="page-center">
+<div class="card">
+<h1 class="title">Iniciar sesión</h1>
+<form method="post" action="/login">
+<input class="input" type="text" name="username" placeholder="Usuario" required>
+<input class="input" type="password" name="password" placeholder="Contraseña" required>
+<button class="btn" type="submit">Entrar</button>
+</form>
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+<a class="link" href="/forgot-password">He olvidado mi contraseña</a>
+</div>
+</div>
+</body>
+</html>

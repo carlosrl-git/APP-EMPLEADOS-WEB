@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}Rutas | App Empleados{% endblock %}
+{% block content %}
+<div class="top-actions">
+  <div>
+    <h1 class="page-title">Planificación de Rutas</h1>
+    <p class="page-subtitle">Crea jornadas y abre la ficha detallada de cada una.</p>
+  </div>
+  <div style="display:flex; gap:12px;">
+    <a href="/dashboard" class="btn-inline secondary">Volver</a>
+  </div>
+</div>
+
+<div class="card" style="padding:22px; margin-bottom:22px;">
+  <h2 style="margin:0 0 16px 0;">Crear jornada</h2>
+  <form method="post" action="/rutas/nueva" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; align-items:end;">
+    <div>
+      <label style="display:block; margin-bottom:8px;">Empleado</label>
+      <select name="trabajador_id" class="input" required>
+        <option value="">Selecciona un empleado</option>
+        {% for t in trabajadores %}
+        <option value="{{ t.id }}">{{ t.id }} - {{ t.nombre }} {{ t.apellidos or '' }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label style="display:block; margin-bottom:8px;">Fecha</label>
+      <input type="date" name="fecha" class="input" required>
+    </div>
+    <div>
+      <label style="display:block; margin-bottom:8px;">Inicio jornada</label>
+      <input type="time" name="inicio_jornada" class="input" required>
+    </div>
+    <div>
+      <label style="display:block; margin-bottom:8px;">Fin jornada</label>
+      <input type="time" name="fin_jornada" class="input" required>
+    </div>
+    <div>
+      <label style="display:block; margin-bottom:8px;">Total horas</label>
+      <input type="number" step="0.01" name="total_horas" class="input" value="8.00">
+    </div>
+    <div style="grid-column:1/-1;">
+      <label style="display:block; margin-bottom:8px;">Observaciones</label>
+      <input type="text" name="observaciones" class="input" placeholder="Observaciones generales">
+    </div>
+    <div style="grid-column:1/-1;">
+      <button type="submit" class="btn" style="width:auto; min-width:180px;">Crear jornada</button>
+    </div>
+  </form>
+</div>
+
+<div class="card" style="padding:22px;">
+  <h2 style="margin:0 0 16px 0;">Jornadas creadas</h2>
+  <div style="overflow-x:auto;">
+    <table style="width:100%; border-collapse:collapse; min-width:1100px;">
+      <thead>
+        <tr style="background:#161616;">
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">ID</th>
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Empleado</th>
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Fecha</th>
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Inicio</th>
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Fin</th>
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Horas</th>
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rutas %}
+        <tr>
+          <td style="padding:14px; border-bottom:1px solid #242424;">{{ r.id }}</td>
+          <td style="padding:14px; border-bottom:1px solid #242424;">{{ r.trabajador_nombre or '-' }} {{ r.trabajador_apellidos or '' }}</td>
+          <td style="padding:14px; border-bottom:1px solid #242424;">{{ r.fecha }}</td>
+          <td style="padding:14px; border-bottom:1px solid #242424;">{{ r.hora_inicio_jornada or '-' }}</td>
+          <td style="padding:14px; border-bottom:1px solid #242424;">{{ r.hora_fin_jornada or '-' }}</td>
+          <td style="padding:14px; border-bottom:1px solid #242424;">{{ r.total_horas or '-' }}</td>
+          <td style="padding:14px; border-bottom:1px solid #242424; white-space:nowrap;">
+            <a href="/rutas/{{ r.id }}" class="btn-inline">Abrir jornada</a>
+            {% if rol == 'admin' %}
+            <a href="/rutas/eliminar/{{ r.id }}" class="btn-inline secondary">Eliminar</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+        {% if not rutas %}
+        <tr>
+          <td colspan="7" style="padding:18px; border-bottom:1px solid #242424;">No hay jornadas creadas.</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+﻿{% extends 'base.html' %}
+{% block title %}Nuevo trabajador | App Empleados{% endblock %}
+{% block content %}
+<div class="top-actions">
+<div>
+<h1 class="page-title">Nuevo trabajador</h1>
+<p class="page-subtitle">Añadir un nuevo trabajador al sistema.</p>
+</div>
+<a href="/trabajadores" class="btn-inline secondary">Volver</a>
+</div>
+
+<form method="post" action="/trabajadores/guardar2" style="max-width:780px;">
+<input class="input" type="text" name="nombre" placeholder="Nombre" required>
+<input class="input" type="text" name="apellidos" placeholder="Apellidos">
+<input class="input" type="email" name="email" placeholder="Email">
+<input class="input" type="text" name="telefono" placeholder="Teléfono">
+<input class="input" type="text" name="puesto" placeholder="Puesto">
+
+<select class="input" name="departamento_id">
+<option value="">Selecciona departamento</option>
+{% for d in departamentos %}
+<option value="{{ d.id }}">{{ d.nombre }}</option>
+{% endfor %}
+</select>
+
+<button class="btn" type="submit">Guardar trabajador</button>
+</form>
+
+{% if msg %}<p class="msg">{{ msg }}</p>{% endif %}
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+{% endblock %}

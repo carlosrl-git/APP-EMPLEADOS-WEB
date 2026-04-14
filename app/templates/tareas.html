@@ -1,0 +1,83 @@
+﻿{% extends 'base.html' %}
+{% block title %}Tareas | App Empleados{% endblock %}
+{% block content %}
+<div class="top-actions">
+<div>
+<h1 class="page-title">Tareas</h1>
+<p class="page-subtitle">Gestión de tareas asignadas al personal.</p>
+</div>
+<div style="display:flex; gap:12px;">
+{% if rol == 'admin' %}
+<a href="/tareas/nueva" class="btn-inline">Nueva tarea</a>
+{% endif %}
+<a href="/tareas/exportar" class="btn-inline">Exportar Excel</a><a href="/dashboard" class="btn-inline secondary">Volver</a>
+</div>
+</div>
+
+<form method="get" action="/tareas" style="margin:18px 0 22px 0; display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+<select class="input" style="max-width:240px; margin:0;" name="estado">
+<option value="">Todos los estados</option>
+<option value="pendiente" {% if estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
+<option value="en_progreso" {% if estado == 'en_progreso' %}selected{% endif %}>En progreso</option>
+<option value="finalizada" {% if estado == 'finalizada' %}selected{% endif %}>Finalizada</option>
+<option value="cancelada" {% if estado == 'cancelada' %}selected{% endif %}>Cancelada</option>
+</select>
+
+<select class="input" style="max-width:240px; margin:0;" name="prioridad">
+<option value="">Todas las prioridades</option>
+<option value="baja" {% if prioridad == 'baja' %}selected{% endif %}>Baja</option>
+<option value="media" {% if prioridad == 'media' %}selected{% endif %}>Media</option>
+<option value="alta" {% if prioridad == 'alta' %}selected{% endif %}>Alta</option>
+</select>
+
+<button class="btn" style="width:auto; min-width:150px;" type="submit">Filtrar</button>
+<a href="/tareas" class="btn-inline secondary">Limpiar</a>
+</form>
+
+<div style="overflow-x:auto; margin-top:10px;">
+<table style="width:100%; border-collapse:collapse; min-width:1300px;">
+<thead>
+<tr style="background:#161616;">
+<th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">ID</th>
+<th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Título</th>
+<th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Trabajador</th>
+<th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Estado</th>
+<th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Prioridad</th>
+<th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Asignación</th>
+<th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Vencimiento</th>
+{% if rol == 'admin' %}
+<th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Acciones</th>
+{% endif %}
+</tr>
+</thead>
+<tbody>
+{% for t in tareas %}
+<tr>
+<td style="padding:14px; border-bottom:1px solid #242424;">{{ t.id }}</td>
+<td style="padding:14px; border-bottom:1px solid #242424;">{{ t.titulo }}</td>
+<td style="padding:14px; border-bottom:1px solid #242424;">{{ t.nombre or '-' }} {{ t.apellidos or '' }}</td>
+<td style="padding:14px; border-bottom:1px solid #242424;">{{ t.estado }}</td>
+<td style="padding:14px; border-bottom:1px solid #242424;">{{ t.prioridad }}</td>
+<td style="padding:14px; border-bottom:1px solid #242424;">{{ t.fecha_asignacion }}</td>
+<td style="padding:14px; border-bottom:1px solid #242424;">{{ t.fecha_vencimiento or '-' }}</td>
+{% if rol == 'admin' %}
+<td style="padding:14px; border-bottom:1px solid #242424; white-space:nowrap;">
+<a href="/tareas/estado/{{ t.id }}/pendiente" class="btn-inline secondary">Pendiente</a>
+<a href="/tareas/estado/{{ t.id }}/en_progreso" class="btn-inline">Proceso</a>
+<a href="/tareas/estado/{{ t.id }}/finalizada" class="btn-inline secondary">Finalizar</a>
+<a href="/tareas/estado/{{ t.id }}/cancelada" class="btn-inline secondary">Cancelar</a>
+<a href="/tareas/editar/{{ t.id }}" class="btn-inline">Editar</a>
+<a href="/tareas/eliminar/{{ t.id }}" class="btn-inline secondary">Eliminar</a>
+</td>
+{% endif %}
+</tr>
+{% endfor %}
+{% if not tareas %}
+<tr>
+<td colspan="8" style="padding:18px; border-bottom:1px solid #242424;">No hay tareas para ese filtro.</td>
+</tr>
+{% endif %}
+</tbody>
+</table>
+</div>
+{% endblock %}

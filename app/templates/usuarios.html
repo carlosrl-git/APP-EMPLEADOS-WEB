@@ -1,0 +1,53 @@
+﻿{% extends 'base.html' %}
+{% block title %}Usuarios | App Empleados{% endblock %}
+{% block content %}
+<div class="top-actions">
+<div>
+<h1 class="page-title">Usuarios</h1>
+<p class="page-subtitle">Gestión de accesos al sistema.</p>
+</div>
+<div style="display:flex; gap:12px;">
+<a href="/usuarios/nuevo" class="btn-inline">Nuevo usuario</a>
+<a href="/dashboard" class="btn-inline secondary">Volver</a>
+</div>
+</div>
+
+<div style="overflow-x:auto; margin-top:10px;">
+<table style="width:100%; border-collapse:collapse; min-width:1150px;">
+<thead>
+<tr style="background:#161616;">
+<th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">ID</th>
+<th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Usuario</th>
+<th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Email</th>
+<th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Rol</th>
+<th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Activo</th>
+<th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Creado</th>
+<th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Acciones</th>
+</tr>
+</thead>
+<tbody>
+{% for u in usuarios %}
+<tr>
+<td style="padding:14px; border-bottom:1px solid #242424;">{{ u.id }}</td>
+<td style="padding:14px; border-bottom:1px solid #242424;">{{ u.username }}</td>
+<td style="padding:14px; border-bottom:1px solid #242424;">{{ u.email }}</td>
+<td style="padding:14px; border-bottom:1px solid #242424;">{{ u.rol }}</td>
+<td style="padding:14px; border-bottom:1px solid #242424;">{% if u.activo %}Sí{% else %}No{% endif %}</td>
+<td style="padding:14px; border-bottom:1px solid #242424; white-space:nowrap;">{{ u.creado_en }}</td>
+<td style="padding:14px; border-bottom:1px solid #242424; white-space:nowrap;">
+<div style="display:flex; gap:10px; flex-wrap:wrap;">
+<a href="/usuarios/editar/{{ u.id }}" class="btn-inline">Editar</a>
+<a href="/usuarios/toggle/{{ u.id }}" class="btn-inline secondary">Activar/Desactivar</a>
+</div>
+</td>
+</tr>
+{% endfor %}
+{% if not usuarios %}
+<tr>
+<td colspan="7" style="padding:18px; border-bottom:1px solid #242424;">No hay usuarios registrados.</td>
+</tr>
+{% endif %}
+</tbody>
+</table>
+</div>
+{% endblock %}

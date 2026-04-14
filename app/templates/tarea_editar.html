@@ -1,0 +1,41 @@
+﻿{% extends 'base.html' %}
+{% block title %}Editar tarea{% endblock %}
+{% block content %}
+<div class="top-actions">
+<div>
+<h1 class="page-title">Editar tarea</h1>
+</div>
+<a href="/tareas" class="btn-inline secondary">Volver</a>
+</div>
+
+<form method="post">
+<input class="input" name="titulo" value="{{ t.titulo }}">
+<textarea class="input" name="descripcion">{{ t.descripcion }}</textarea>
+
+<select class="input" name="trabajador_id">
+{% for tr in trabajadores %}
+<option value="{{ tr.id }}" {% if t.trabajador_id == tr.id %}selected{% endif %}>
+{{ tr.nombre }} {{ tr.apellidos }}
+</option>
+{% endfor %}
+</select>
+
+<select class="input" name="prioridad">
+<option value="baja" {% if t.prioridad=='baja' %}selected{% endif %}>Baja</option>
+<option value="media" {% if t.prioridad=='media' %}selected{% endif %}>Media</option>
+<option value="alta" {% if t.prioridad=='alta' %}selected{% endif %}>Alta</option>
+</select>
+
+<select class="input" name="estado">
+<option value="pendiente" {% if t.estado=='pendiente' %}selected{% endif %}>Pendiente</option>
+<option value="en_progreso" {% if t.estado=='en_progreso' %}selected{% endif %}>En proceso</option>
+<option value="finalizada" {% if t.estado=='finalizada' %}selected{% endif %}>Finalizada</option>
+<option value="cancelada" {% if t.estado=='cancelada' %}selected{% endif %}>Cancelada</option>
+</select>
+
+<input class="input" type="date" name="fecha_asignacion" value="{{ t.fecha_asignacion }}">
+<input class="input" type="date" name="fecha_vencimiento" value="{{ t.fecha_vencimiento }}">
+
+<button class="btn">Guardar cambios</button>
+</form>
+{% endblock %}

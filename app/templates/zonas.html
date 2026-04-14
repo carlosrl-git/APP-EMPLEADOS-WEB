@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block title %}Zonas | App Empleados{% endblock %}
+{% block content %}
+<div class="top-actions">
+  <div>
+    <h1 class="page-title">Zonas</h1>
+    <p class="page-subtitle">Gestión de zonas activas e inactivas del sistema.</p>
+  </div>
+  <div style="display:flex; gap:12px;">
+    <a href="/dashboard" class="btn-inline secondary">Volver</a>
+  </div>
+</div>
+
+<div class="card" style="padding:22px; margin-bottom:22px;">
+  <h2 style="margin:0 0 16px 0;">Nueva zona</h2>
+  <form method="post" action="/zonas/nueva" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; align-items:end;">
+    <div>
+      <label style="display:block; margin-bottom:8px;">Nombre</label>
+      <input type="text" name="nombre" class="input" required placeholder="Nombre de la zona">
+    </div>
+    <div>
+      <label style="display:block; margin-bottom:8px;">Tipo</label>
+      <input type="text" name="tipo" class="input" placeholder="Tipo de zona">
+    </div>
+    <div>
+      <label style="display:block; margin-bottom:8px;">Estado</label>
+      <select name="activo" class="input">
+        <option value="true">Activa</option>
+        <option value="false">Inactiva</option>
+      </select>
+    </div>
+    <div style="grid-column:1/-1;">
+      <button type="submit" class="btn" style="width:auto; min-width:180px;">Guardar zona</button>
+    </div>
+  </form>
+</div>
+
+<div class="card" style="padding:22px;">
+  <h2 style="margin:0 0 16px 0;">Listado de zonas</h2>
+  <div style="overflow-x:auto;">
+    <table style="width:100%; border-collapse:collapse; min-width:1000px;">
+      <thead>
+        <tr style="background:#161616;">
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">ID</th>
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Nombre</th>
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Tipo</th>
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Estado</th>
+          {% if rol == 'admin' %}
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Acciones</th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for z in zonas %}
+        <tr>
+          <td style="padding:14px; border-bottom:1px solid #242424;">{{ z.id }}</td>
+          <td style="padding:14px; border-bottom:1px solid #242424;">{{ z.nombre or '-' }}</td>
+          <td style="padding:14px; border-bottom:1px solid #242424;">{{ z.tipo or '-' }}</td>
+          <td style="padding:14px; border-bottom:1px solid #242424;">
+            {% if z.activo %}Activa{% else %}Inactiva{% endif %}
+          </td>
+          {% if rol == 'admin' %}
+          <td style="padding:14px; border-bottom:1px solid #242424; white-space:nowrap;">
+            <a href="/zonas/toggle/{{ z.id }}" class="btn-inline">Cambiar estado</a>
+            <a href="/zonas/eliminar/{{ z.id }}" class="btn-inline secondary">Eliminar</a>
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+        {% if not zonas %}
+        <tr>
+          <td colspan="5" style="padding:18px; border-bottom:1px solid #242424;">No hay zonas registradas todavía.</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

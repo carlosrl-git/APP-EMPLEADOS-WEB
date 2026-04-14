@@ -1,0 +1,28 @@
+﻿{% extends 'base.html' %}
+{% block title %}Editar trabajador | App Empleados{% endblock %}
+{% block content %}
+<div class="top-actions">
+<div>
+<h1 class="page-title">Editar trabajador</h1>
+<p class="page-subtitle">Modificar la información del trabajador seleccionado.</p>
+</div>
+<a href="/trabajadores" class="btn-inline secondary">Volver</a>
+</div>
+
+<form method="post" style="max-width:780px;">
+<input class="input" name="nombre" value="{{ t.nombre or '' }}" required>
+<input class="input" name="apellidos" value="{{ t.apellidos or '' }}">
+<input class="input" name="email" value="{{ t.email or '' }}">
+<input class="input" name="telefono" value="{{ t.telefono or '' }}">
+<input class="input" name="puesto" value="{{ t.puesto or '' }}">
+
+<select class="input" name="departamento_id">
+<option value="">Departamento</option>
+{% for d in departamentos %}
+<option value="{{ d.id }}" {% if t.departamento_id == d.id %}selected{% endif %}>{{ d.nombre }}</option>
+{% endfor %}
+</select>
+
+<button class="btn" type="submit">Guardar cambios</button>
+</form>
+{% endblock %}

@@ -1,0 +1,48 @@
+﻿{% extends 'base.html' %}
+{% block title %}Nueva tarea | App Empleados{% endblock %}
+{% block content %}
+<div class="top-actions">
+<div>
+<h1 class="page-title">Nueva tarea</h1>
+<p class="page-subtitle">Asignar una nueva tarea a un trabajador.</p>
+</div>
+<a href="/tareas" class="btn-inline secondary">Volver</a>
+</div>
+
+<form method="post" action="/tareas/nueva" style="max-width:820px;">
+<input class="input" type="text" name="titulo" placeholder="Título de la tarea" required>
+
+<textarea class="input" name="descripcion" placeholder="Descripción" style="min-height:140px; resize:vertical;"></textarea>
+
+<select class="input" name="trabajador_id" required>
+<option value="">Selecciona trabajador</option>
+{% for t in trabajadores %}
+<option value="{{ t.id }}">{{ t.nombre }} {{ t.apellidos or '' }}</option>
+{% endfor %}
+</select>
+
+<select class="input" name="prioridad">
+<option value="baja">Baja</option>
+<option value="media" selected>Media</option>
+<option value="alta">Alta</option>
+</select>
+
+<select class="input" name="estado">
+<option value="pendiente" selected>Pendiente</option>
+<option value="en_progreso">En progreso</option>
+<option value="finalizada">Finalizada</option>
+<option value="cancelada">Cancelada</option>
+</select>
+
+<label style="display:block; margin:12px 0 6px 0;">Fecha de asignación</label>
+<input class="input" type="date" name="fecha_asignacion" required>
+
+<label style="display:block; margin:12px 0 6px 0;">Fecha de vencimiento</label>
+<input class="input" type="date" name="fecha_vencimiento">
+
+<button class="btn" type="submit">Guardar tarea</button>
+</form>
+
+{% if msg %}<p class="msg">{{ msg }}</p>{% endif %}
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+{% endblock %}

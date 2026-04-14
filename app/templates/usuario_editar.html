@@ -1,0 +1,21 @@
+﻿{% extends 'base.html' %}
+{% block content %}
+<div class="top-actions">
+<div>
+<h1 class="page-title">Editar usuario</h1>
+</div>
+<a href="/usuarios" class="btn-inline secondary">Volver</a>
+</div>
+
+<form method="post" style="max-width:780px;">
+<input class="input" name="username_nuevo" value="{{ u.username }}">
+<input class="input" name="email" value="{{ u.email }}">
+
+<select class="input" name="rol">
+<option value="usuario" {% if u.rol=='usuario' %}selected{% endif %}>Usuario</option>
+<option value="admin" {% if u.rol=='admin' %}selected{% endif %}>Admin</option>
+</select>
+
+<button class="btn">Guardar cambios</button>
+</form>
+{% endblock %}

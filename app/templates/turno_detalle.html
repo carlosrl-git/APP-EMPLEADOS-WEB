@@ -1,0 +1,61 @@
+﻿{% extends 'base.html' %}
+{% block title %}Ficha de la jornada abierta | App Empleados{% endblock %}
+{% block content %}
+<div class="card" style="padding:22px; background:#111; border:1px solid #242424; border-radius:18px;">
+  <h1 class="page-title" style="font-size:30px; margin-bottom:8px;">Ficha de la jornada abierta</h1>
+  <p style="color:#ff4d4f; font-weight:800; margin:0 0 26px 0;">Jornada abierta: {{ turno.nombre or '-' }} {{ turno.apellidos or '' }} | {{ turno.fecha }} | {{ turno.inicio_jornada or '-' }} - {{ turno.fin_jornada or '-' }}</p>
+
+  <form method="post" action="/turnos/{{ turno.id }}/add_linea" style="display:grid; grid-template-columns:180px 180px 1fr; gap:18px; align-items:end; margin-bottom:24px;">
+    <div>
+      <label style="display:block; margin-bottom:8px; color:#fff;">Hora inicio</label>
+      <input type="time" name="hora_inicio" class="input" required style="width:100%;">
+    </div>
+    <div>
+      <label style="display:block; margin-bottom:8px; color:#fff;">Hora fin</label>
+      <input type="time" name="hora_fin" class="input" required style="width:100%;">
+    </div>
+    <div style="grid-column:1 / span 2;">
+      <label style="display:block; margin-bottom:8px; color:#fff;">Tarea</label>
+      <input type="text" name="tarea" class="input" required placeholder="Escribe la tarea" style="width:100%;">
+    </div>
+    <div style="grid-column:1 / -1; display:flex; gap:12px; margin-top:6px;">
+      <button type="submit" class="btn" style="width:auto; min-width:150px;">Añadir línea</button>
+      <a href="/turnos" class="btn-inline secondary">Volver a jornadas</a>
+    </div>
+  </form>
+
+  <div style="overflow-x:auto;">
+    <table style="width:100%; border-collapse:collapse; min-width:1000px;">
+      <thead>
+        <tr style="background:#161616;">
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">ID</th>
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Hora inicio</th>
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Hora fin</th>
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Tarea</th>
+          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for l in lineas %}
+        <tr>
+          <td style="padding:14px; border-bottom:1px solid #242424;">{{ l.id }}</td>
+          <td style="padding:14px; border-bottom:1px solid #242424;">{{ l.hora_inicio or '-' }}</td>
+          <td style="padding:14px; border-bottom:1px solid #242424;">{{ l.hora_fin or '-' }}</td>
+          <td style="padding:14px; border-bottom:1px solid #242424;">{{ l.tarea or '-' }}</td>
+          <td style="padding:14px; border-bottom:1px solid #242424; white-space:nowrap;">
+            {% if rol == 'admin' %}
+            <a href="/turnos/{{ turno.id }}/del_linea/{{ l.id }}" class="btn-inline secondary">Eliminar línea</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+        {% if not lineas %}
+        <tr>
+          <td colspan="5" style="padding:18px; border-bottom:1px solid #242424;">No hay líneas añadidas todavía en esta jornada.</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
