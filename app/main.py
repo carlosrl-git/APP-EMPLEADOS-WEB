@@ -21,7 +21,12 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ENV_PATH = os.path.join(BASE_DIR, ".env")
 load_dotenv(dotenv_path=ENV_PATH)
 
-print(f"[ENV DEBUG] Cargando .env desde: {ENV_PATH}")
+print(f"[ENV DEBUG] Ruta .env: {ENV_PATH}")
+print(f"[ENV DEBUG] Existe .env: {os.path.exists(ENV_PATH)}")
+print(f"[ENV DEBUG] SMTP_HOST={os.getenv('SMTP_HOST')}")
+print(f"[ENV DEBUG] SMTP_PORT={os.getenv('SMTP_PORT')}")
+print(f"[ENV DEBUG] SMTP_USER={os.getenv('SMTP_USER')}")
+print(f"[ENV DEBUG] SMTP_FROM={os.getenv('SMTP_FROM')}")
 
 app = FastAPI(title="App Empleados Web")
 app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")), name="static")
