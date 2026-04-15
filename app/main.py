@@ -1772,8 +1772,11 @@ def exportar_tareas_excel(request: Request):
 # =========================
 # DEPARTAMENTOS
 # =========================
-from fastapi import Request
 from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from fastapi import Request
+
+templates = Jinja2Templates(directory="app/templates")
 
 @app.get("/departamentos", response_class=HTMLResponse)
 def ver_departamentos(request: Request):
@@ -1785,9 +1788,8 @@ def ver_departamentos(request: Request):
             ORDER BY nombre ASC
         """)).mappings().all()
 
-    html = "<h1>Departamentos</h1><ul>"
-    for d in departamentos:
-        html += f"<li>{d['id']} - {d['nombre']}</li>"
-    html += "</ul>"
+    return templates.TemplateResponse("departamentos.html", {
+        "request": request,
+        "departamentos": departamentos
+    })
 
-    return html

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Departamentos</title>
+    <style>
+        body {
+            background-color: #0f0f0f;
+            color: white;
+            font-family: Arial;
+        }
+
+        h1 {
+            color: #ff0000;
+        }
+
+        table {
+            width: 60%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #333;
+            text-align: left;
+        }
+
+        th {
+            color: #ff0000;
+        }
+
+        tr:hover {
+            background-color: #1a1a1a;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Departamentos</h1>
+
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+        </tr>
+
+        {% for d in departamentos %}
+        <tr>
+            <td>{{ d.id }}</td>
+            <td>{{ d.nombre }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+</body>
+</html>
