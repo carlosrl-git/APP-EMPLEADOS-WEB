@@ -4,10 +4,10 @@ from app.core.config import settings
 engine = create_engine(settings.DATABASE_URL)
 
 departamentos = [
-    "Administración",
+    "AdministraciÃ³n",
     "Limpieza",
     "Mantenimiento",
-    "Recepción",
+    "RecepciÃ³n",
     "Recursos Humanos"
 ]
 

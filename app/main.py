@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+﻿from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 import os
 import random
@@ -37,12 +37,12 @@ def send_reset_email(to_email: str, code: str) -> None:
     from_email = os.getenv("FROM_EMAIL")
 
     if not all([smtp_host, smtp_port, smtp_user, smtp_password, from_email]):
-        print("[MAIL] Variables SMTP incompletas. No se envi� el correo.")
-        print(f"[MAIL] C�digo para {to_email}: {code}")
+        print("[MAIL] Variables SMTP incompletas. No se envió el correo.")
+        print(f"[MAIL] CÃ³digo para {to_email}: {code}")
         return
 
-    msg = MIMEText(f"Tu c�digo de recuperaci�n es: {code}")
-    msg["Subject"] = "Recuperaci�n de contrase�a - AppEmpleados"
+    msg = MIMEText(f"Tu cÃ³digo de recuperaciÃ³n es: {code}")
+    msg["Subject"] = "RecuperaciÃ³n de contraseÃ±a - AppEmpleados"
     msg["From"] = from_email
     msg["To"] = to_email
 
@@ -131,11 +131,11 @@ def login(request: Request, username: str = Form(...), password: str = Form(...)
                     {"u": username, "t": now},
                 )
 
-        return render_template(request, "login.html", {"error": "Usuario o contrase�a incorrectos"}, 401)
+        return render_template(request, "login.html", {"error": "Usuario o contraseÃ±a incorrectos"}, 401)
 
     except Exception as e:
         print(f"[LOGIN ERROR] {e}")
-        return render_template(request, "login.html", {"error": "Error interno al iniciar sesi�n"}, 500)
+        return render_template(request, "login.html", {"error": "Error interno al iniciar sesiÃ³n"}, 500)
 
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request):
@@ -790,7 +790,7 @@ def forgot_password(request: Request, email: str = Form(...)):
                 conn.execute(text("INSERT INTO password_resets (email, code, expires_at, used) VALUES (:e, :c, :x, false)"), {"e": email, "c": code, "x": expires_at})
                 send_reset_email(email, code)
 
-        return render_template(request, "forgot_password.html", {"msg": "Si el correo existe, se enviar� un c�digo.", "error": ""})
+        return render_template(request, "forgot_password.html", {"msg": "Si el correo existe, se enviarÃ¡ un cÃ³digo.", "error": ""})
 
     except Exception as e:
         print(f"[FORGOT PASSWORD ERROR] {e}")
@@ -803,27 +803,27 @@ def reset_password_page(request: Request):
 @app.post("/reset-password", response_class=HTMLResponse)
 def reset_password(request: Request, email: str = Form(...), code: str = Form(...), new_password: str = Form(...)):
     if len(new_password) < 8:
-        return render_template(request, "reset_password.html", {"msg": "", "error": "La contrase�a debe tener al menos 8 caracteres"}, 400)
+        return render_template(request, "reset_password.html", {"msg": "", "error": "La contraseÃ±a debe tener al menos 8 caracteres"}, 400)
 
     try:
         with engine.begin() as conn:
             row = conn.execute(text("SELECT id, email, code, expires_at, used FROM password_resets WHERE email = :e AND code = :c AND used = false ORDER BY id DESC LIMIT 1"), {"e": email, "c": code}).mappings().first()
 
             if not row:
-                return render_template(request, "reset_password.html", {"msg": "", "error": "C�digo inv�lido"}, 400)
+                return render_template(request, "reset_password.html", {"msg": "", "error": "CÃ³digo invÃ¡lido"}, 400)
 
             if datetime.utcnow() > row["expires_at"]:
-                return render_template(request, "reset_password.html", {"msg": "", "error": "C�digo caducado"}, 400)
+                return render_template(request, "reset_password.html", {"msg": "", "error": "CÃ³digo caducado"}, 400)
 
             new_hash = pbkdf2_sha256.hash(new_password)
             conn.execute(text("UPDATE usuarios SET password_hash = :p WHERE email = :e"), {"p": new_hash, "e": email})
             conn.execute(text("UPDATE password_resets SET used = true WHERE id = :id"), {"id": row["id"]})
 
-        return render_template(request, "reset_password.html", {"msg": "Contrase�a cambiada correctamente", "error": ""})
+        return render_template(request, "reset_password.html", {"msg": "ContraseÃ±a cambiada correctamente", "error": ""})
 
     except Exception as e:
         print(f"[RESET PASSWORD ERROR] {e}")
-        return render_template(request, "reset_password.html", {"msg": "", "error": "Error al cambiar la contrase�a"}, 500)
+        return render_template(request, "reset_password.html", {"msg": "", "error": "Error al cambiar la contraseÃ±a"}, 500)
 
 @app.get("/turnos", response_class=HTMLResponse)
 def ver_turnos(request: Request):
@@ -1628,7 +1628,7 @@ def exportar_productos_excel(request: Request):
     ws["B3"].border = borde
     ws["B3"].alignment = izquierda
 
-    encabezados = ["ID", "Nombre", "Categor�a", "Stock"]
+    encabezados = ["ID", "Nombre", "CategorÃ­a", "Stock"]
     fila = 5
     for i, e in enumerate(encabezados, start=1):
         c = ws.cell(row=fila, column=i, value=e)
@@ -1721,7 +1721,7 @@ def exportar_tareas_excel(request: Request):
     ws["B3"].border = borde
     ws["B3"].alignment = izquierda
 
-    encabezados = ["ID", "T�tulo", "Descripci�n", "Trabajador", "Estado", "Prioridad", "Asignaci�n", "Vencimiento"]
+    encabezados = ["ID", "TÃ­tulo", "DescripciÃ³n", "Trabajador", "Estado", "Prioridad", "AsignaciÃ³n", "Vencimiento"]
     fila = 5
     for i, e in enumerate(encabezados, start=1):
         c = ws.cell(row=fila, column=i, value=e)
@@ -1789,5 +1789,6 @@ def ver_departamentos(request: Request):
         """)).mappings().all()
 
     return templates.TemplateResponse(request=request, name="departamentos.html", context={"request": request, "departamentos": departamentos})
+
 
 
