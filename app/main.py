@@ -1769,4 +1769,25 @@ def exportar_tareas_excel(request: Request):
     )
 
 
+# =========================
+# DEPARTAMENTOS
+# =========================
+from fastapi import Request
+from fastapi.responses import HTMLResponse
 
+@app.get("/departamentos", response_class=HTMLResponse)
+def ver_departamentos(request: Request):
+    with engine.connect() as conn:
+        departamentos = conn.execute(text("""
+            SELECT id, nombre
+            FROM departamentos
+            WHERE activo = true
+            ORDER BY nombre ASC
+        """)).mappings().all()
+
+    html = "<h1>Departamentos</h1><ul>"
+    for d in departamentos:
+        html += f"<li>{d['id']} - {d['nombre']}</li>"
+    html += "</ul>"
+
+    return html
