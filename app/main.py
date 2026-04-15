@@ -17,13 +17,16 @@ from sqlalchemy import create_engine, text
 
 from app.core.config import settings
 
-load_dotenv()
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ENV_PATH = os.path.join(BASE_DIR, ".env")
+load_dotenv(dotenv_path=ENV_PATH)
+
+print(f"[ENV DEBUG] Cargando .env desde: {ENV_PATH}")
 
 app = FastAPI(title="App Empleados Web")
 app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")), name="static")
 templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
 engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True, future=True)
-
 
 def render_template(request: Request, name: str, context: dict, status_code: int = 200):
     context["request"] = request
