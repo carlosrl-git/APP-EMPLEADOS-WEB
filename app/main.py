@@ -14,6 +14,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from passlib.hash import pbkdf2_sha256
 from sqlalchemy import create_engine, text
+from starlette.middleware.sessions import SessionMiddleware
 
 from app.core.config import settings
 
@@ -21,17 +22,36 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ENV_PATH = os.path.join(BASE_DIR, ".env")
 load_dotenv(dotenv_path=ENV_PATH)
 
-print(f"[ENV DEBUG] Ruta .env: {ENV_PATH}")
-print(f"[ENV DEBUG] Existe .env: {os.path.exists(ENV_PATH)}")
-print(f"[ENV DEBUG] SMTP_HOST={os.getenv('SMTP_HOST')}")
-print(f"[ENV DEBUG] SMTP_PORT={os.getenv('SMTP_PORT')}")
-print(f"[ENV DEBUG] SMTP_USER={os.getenv('SMTP_USER')}")
-print(f"[ENV DEBUG] SMTP_FROM={os.getenv('SMTP_FROM')}")
+APP_ENV = os.getenv("APP_ENV", "production").lower()
+SESSION_SECRET = os.getenv("SESSION_SECRET") or os.getenv("SECRET_KEY") or "CAMBIA_ESTA_CLAVE_SUPER_LARGA_Y_RANDOM_EN_RENDER"
+SESSION_HTTPS_ONLY = APP_ENV != "development"
 
 app = FastAPI(title="App Empleados Web")
+
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=SESSION_SECRET,
+    same_site="lax",
+    https_only=SESSION_HTTPS_ONLY,
+    max_age=60 * 60 * 8,
+)
+
 app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")), name="static")
 templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
 engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True, future=True)
+
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Content-Security-Policy"] = "default-src 'self' https: data: 'unsafe-inline' 'unsafe-eval'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    return response
+
 
 def render_template(request: Request, name: str, context: dict, status_code: int = 200):
     context["request"] = request
@@ -45,14 +65,8 @@ def send_reset_email(to_email: str, code: str) -> bool:
     smtp_password = os.getenv("SMTP_PASSWORD")
     from_email = os.getenv("SMTP_FROM") or smtp_user
 
-    print(
-        f"[CORREO DEBUG] SMTP_HOST={smtp_host} SMTP_PORT={smtp_port} "
-        f"SMTP_USER={smtp_user} SMTP_FROM={from_email}"
-    )
-
     if not all([smtp_host, smtp_port, smtp_user, smtp_password, from_email]):
         print("[CORREO] Variables SMTP incompletas. No se envió el correo.")
-        print(f"[CORREO] Código para {to_email}: {code}")
         return False
 
     msg = MIMEText(
@@ -66,7 +80,7 @@ def send_reset_email(to_email: str, code: str) -> bool:
     msg["To"] = to_email
 
     try:
-        server = smtplib.SMTP(smtp_host, int(smtp_port))
+        server = smtplib.SMTP(smtp_host, int(smtp_port), timeout=20)
         server.ehlo()
         server.starttls()
         server.ehlo()
@@ -77,12 +91,22 @@ def send_reset_email(to_email: str, code: str) -> bool:
         return True
     except Exception as e:
         print(f"[CORREO ERROR] {e}")
-        print(f"[CORREO] Código para {to_email}: {code}")
         return False
 
 
+def get_client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
 def get_current_username(request: Request):
-    return request.cookies.get("session_user")
+    username = request.session.get("session_user")
+    if username:
+        return username
+    legacy_cookie = request.cookies.get("session_user")
+    return legacy_cookie
 
 
 def get_current_role(username: str):
@@ -102,6 +126,7 @@ def require_login(request: Request):
         return None, None, RedirectResponse(url="/", status_code=303)
     rol = get_current_role(username)
     if not rol:
+        request.session.clear()
         response = RedirectResponse(url="/", status_code=303)
         response.delete_cookie("session_user")
         return None, None, response
@@ -119,19 +144,33 @@ def require_admin(request: Request):
 
 @app.get("/", response_class=HTMLResponse)
 def login_page(request: Request):
-    if request.cookies.get("session_user"):
+    username = get_current_username(request)
+    if username and get_current_role(username):
         return RedirectResponse(url="/dashboard", status_code=303)
-    return render_template(request, "login.html", {"error": ""})
+    request.session.clear()
+    response = render_template(request, "login.html", {"error": ""})
+    response.delete_cookie("session_user")
+    return response
 
 
 @app.post("/login", response_class=HTMLResponse)
 def login(request: Request, username: str = Form(...), password: str = Form(...)):
     now = datetime.utcnow()
+    username = (username or "").strip()
+    password = password or ""
+    ip = get_client_ip(request)
+
+    if not username or not password:
+        return render_template(request, "login.html", {"error": "Usuario o contraseña incorrectos"}, 401)
 
     try:
         with engine.begin() as conn:
             attempt = conn.execute(
-                text("SELECT username, attempts, last_attempt FROM login_attempts WHERE username = :u"),
+                text("""
+                    SELECT username, attempts, last_attempt
+                    FROM login_attempts
+                    WHERE username = :u
+                """),
                 {"u": username},
             ).mappings().first()
 
@@ -149,21 +188,22 @@ def login(request: Request, username: str = Form(...), password: str = Form(...)
                 )
 
             user = conn.execute(
-                text("SELECT id, username, email, password_hash, rol, activo FROM usuarios WHERE username = :u"),
+                text("""
+                    SELECT id, username, email, password_hash, rol, activo
+                    FROM usuarios
+                    WHERE username = :u
+                """),
                 {"u": username},
             ).mappings().first()
 
             if user and user["activo"] and pbkdf2_sha256.verify(password, user["password_hash"]):
                 conn.execute(text("DELETE FROM login_attempts WHERE username = :u"), {"u": username})
+                request.session.clear()
+                request.session["session_user"] = username
+                request.session["session_role"] = user["rol"]
+                request.session["client_ip"] = ip
                 response = RedirectResponse(url="/dashboard", status_code=303)
-                response.set_cookie(
-                    key="session_user",
-                    value=username,
-                    httponly=True,
-                    samesite="lax",
-                    secure=False,
-                    max_age=60 * 60 * 8,
-                )
+                response.delete_cookie("session_user")
                 return response
 
             if attempt:
@@ -235,8 +275,11 @@ def ver_trabajadores(request: Request, q: str = "", departamento_id: str = ""):
         params["q"] = f"%{q}%"
 
     if departamento_id:
-        sql += " AND t.departamento_id = :departamento_id"
-        params["departamento_id"] = int(departamento_id)
+        try:
+            params["departamento_id"] = int(departamento_id)
+            sql += " AND t.departamento_id = :departamento_id"
+        except ValueError:
+            departamento_id = ""
 
     sql += " ORDER BY t.id"
 
@@ -445,11 +488,11 @@ def editar_trabajador(
             """),
             {
                 "id": id,
-                "nombre": nombre,
-                "apellidos": apellidos or None,
-                "email": email or None,
-                "telefono": telefono or None,
-                "puesto": puesto or None,
+                "nombre": nombre.strip(),
+                "apellidos": apellidos.strip() or None,
+                "email": email.strip() or None,
+                "telefono": telefono.strip() or None,
+                "puesto": puesto.strip() or None,
                 "dep": dep_id,
             },
         )
@@ -774,11 +817,11 @@ def editar_tarea(
             WHERE id=:id
         """), {
             "id": id,
-            "titulo": titulo,
-            "descripcion": descripcion or None,
+            "titulo": titulo.strip(),
+            "descripcion": descripcion.strip() or None,
             "trabajador_id": int(trabajador_id),
-            "prioridad": prioridad,
-            "estado": estado,
+            "prioridad": prioridad.strip(),
+            "estado": estado.strip(),
             "fecha_asignacion": fecha_asignacion,
             "fecha_vencimiento": fecha_vencimiento or None,
         })
@@ -845,6 +888,15 @@ def guardar_usuario(
         return response
 
     try:
+        if len(password) < 8:
+            return render_template(request, "usuario_nuevo.html", {
+                "username": username,
+                "rol": rol_actual,
+                "error": "La contraseña debe tener al menos 8 caracteres",
+                "msg": "",
+                "active_page": "usuarios",
+            }, 400)
+
         password_hash = pbkdf2_sha256.hash(password)
 
         with engine.begin() as conn:
@@ -912,9 +964,9 @@ def editar_usuario(
             WHERE id = :id
         """), {
             "id": id,
-            "username": username_nuevo,
-            "email": email,
-            "rol": rol,
+            "username": username_nuevo.strip(),
+            "email": email.strip(),
+            "rol": rol.strip(),
         })
 
     return RedirectResponse(url="/usuarios", status_code=303)
@@ -937,7 +989,8 @@ def toggle_usuario(request: Request, id: int):
 
 
 @app.get("/logout")
-def logout():
+def logout(request: Request):
+    request.session.clear()
     response = RedirectResponse(url="/", status_code=303)
     response.delete_cookie("session_user")
     return response
@@ -957,22 +1010,22 @@ def forgot_password(request: Request, email: str = Form(...)):
         with engine.begin() as conn:
             user = conn.execute(
                 text("SELECT id FROM usuarios WHERE email = :e AND activo = true"),
-                {"e": email},
+                {"e": email.strip()},
             ).mappings().first()
 
             if user:
                 conn.execute(
                     text("DELETE FROM password_resets WHERE email = :e AND used = false"),
-                    {"e": email},
+                    {"e": email.strip()},
                 )
                 conn.execute(
                     text("""
                         INSERT INTO password_resets (email, code, expires_at, used)
                         VALUES (:e, :c, :x, false)
                     """),
-                    {"e": email, "c": code, "x": expires_at},
+                    {"e": email.strip(), "c": code, "x": expires_at},
                 )
-                send_reset_email(email, code)
+                send_reset_email(email.strip(), code)
 
         return render_template(
             request,
@@ -1018,7 +1071,7 @@ def reset_password(
                 WHERE email = :e AND code = :c AND used = false
                 ORDER BY id DESC
                 LIMIT 1
-            """), {"e": email, "c": code}).mappings().first()
+            """), {"e": email.strip(), "c": code.strip()}).mappings().first()
 
             if not row:
                 return render_template(
@@ -1039,7 +1092,7 @@ def reset_password(
             new_hash = pbkdf2_sha256.hash(new_password)
             conn.execute(
                 text("UPDATE usuarios SET password_hash = :p WHERE email = :e"),
-                {"p": new_hash, "e": email},
+                {"p": new_hash, "e": email.strip()},
             )
             conn.execute(
                 text("UPDATE password_resets SET used = true WHERE id = :id"),
@@ -1113,7 +1166,7 @@ def crear_turno(
             "i": inicio or None,
             "fi": fin or None,
             "h": horas or None,
-            "o": observaciones,
+            "o": observaciones.strip() or None,
         })
 
     return RedirectResponse(url="/turnos", status_code=303)
@@ -1257,7 +1310,7 @@ def add_linea(request: Request, id: int, hora_inicio: str = Form(...), hora_fin:
     with engine.begin() as conn:
         conn.execute(
             text("INSERT INTO turno_lineas (turno_id, hora_inicio, hora_fin, tarea) VALUES (:t, :hi, :hf, :ta)"),
-            {"t": id, "hi": hora_inicio, "hf": hora_fin, "ta": tarea},
+            {"t": id, "hi": hora_inicio, "hf": hora_fin, "ta": tarea.strip()},
         )
 
     return RedirectResponse(url=f"/turnos/{id}", status_code=303)
