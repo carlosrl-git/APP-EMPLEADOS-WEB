@@ -7,6 +7,7 @@ import smtplib
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Form, Request
+from app.ai.routes import router as ai_router
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -27,6 +28,7 @@ SESSION_SECRET = os.getenv("SESSION_SECRET") or os.getenv("SECRET_KEY") or "CAMB
 SESSION_HTTPS_ONLY = APP_ENV != "development"
 
 app = FastAPI(title="App Empleados Web")
+app.include_router(ai_router)
 
 app.add_middleware(
     SessionMiddleware,
@@ -2024,4 +2026,22 @@ def ver_departamentos(request: Request):
         "rol": rol,
         "departamentos": departamentos,
         "active_page": "departamentos",
+    })
+
+@app.get("/ai/logs", response_class=HTMLResponse)
+def ai_logs(request: Request):
+    username, rol, response = require_admin(request)
+    if response:
+        return response
+
+    with engine.begin() as conn:
+        logs = conn.execute(
+            text("SELECT id, usuario, accion, detalle, fecha FROM ai_logs ORDER BY id DESC LIMIT 100")
+        ).mappings().all()
+
+    return render_template(request, "ai_logs.html", {
+        "logs": logs,
+        "username": username,
+        "rol": rol,
+        "active_page": "ai_logs"
     })

@@ -1,0 +1,36 @@
+﻿{% extends "base.html" %}
+{% block content %}
+
+<div class="content-card">
+  <h1 class="title">Logs de IA</h1>
+
+  <table style="width:100%; border-collapse: collapse; margin-top:20px;">
+    <thead>
+      <tr style="background:#111;">
+        <th style="padding:10px; border-bottom:1px solid #333;">ID</th>
+        <th style="padding:10px; border-bottom:1px solid #333;">Usuario</th>
+        <th style="padding:10px; border-bottom:1px solid #333;">Accion</th>
+        <th style="padding:10px; border-bottom:1px solid #333;">Detalle</th>
+        <th style="padding:10px; border-bottom:1px solid #333;">Fecha</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in logs %}
+      <tr style="border-bottom:1px solid #222;">
+        <td style="padding:10px;">{{ log.id }}</td>
+        <td style="padding:10px;">{{ log.usuario }}</td>
+        <td style="padding:10px; color:#11d148;">{{ log.accion }}</td>
+        <td style="padding:10px;">{{ log.detalle }}</td>
+        <td style="padding:10px;">{{ log.fecha }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if logs|length == 0 %}
+    <p style="margin-top:20px; color:#888;">No hay logs todavía.</p>
+  {% endif %}
+
+</div>
+
+{% endblock %}
