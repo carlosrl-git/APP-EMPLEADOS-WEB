@@ -434,9 +434,8 @@ def ficha_trabajador(request: Request, id: int):
         "tareas": tareas,
         "turnos": turnos,
         "rutas": rutas,
-        "active_page": "trabajadores",
+        "active_page": "trabajadores"
     })
-
 
 @app.get("/trabajadores/editar/{id}", response_class=HTMLResponse)
 def editar_trabajador_page(request: Request, id: int):

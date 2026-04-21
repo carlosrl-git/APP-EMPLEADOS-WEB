@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}App Empleados{% endblock %}</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', path='/styles.css') }}">
+
+    <style>
+        body {
+            margin: 0;
+            background: #0b0b0b;
+            color: white;
+            font-family: Arial;
+        }
+
+        .sidebar {
+            width: 220px;
+            background: #111;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            padding: 20px;
+        }
+
+        .main {
+            margin-left: 220px;
+            padding: 20px;
+        }
+
+        .nav-link {
+            display: block;
+            padding: 10px;
+            margin-bottom: 5px;
+            color: white;
+            text-decoration: none;
+        }
+
+        .nav-link:hover {
+            background: #222;
+        }
+
+        .nav-link.active {
+            background: #e11d48;
+        }
+
+        #chat-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #1a1a1a;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        #chat-box {
+            display: none;
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            width: 300px;
+            height: 400px;
+            background: #111;
+            border: 1px solid #333;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="sidebar">
+    <h2>App</h2>
+
+    <a class="nav-link" href="/dashboard">Dashboard</a>
+    <a class="nav-link" href="/trabajadores">Trabajadores</a>
+    <a class="nav-link" href="/usuarios">Usuarios</a>
+
+    <a class="nav-link" href="/logout">Salir</a>
+</div>
+
+<div class="main">
+    {% block content %}{% endblock %}
+</div>
+
+<button id="chat-btn">IA</button>
+<div id="chat-box"></div>
+
+<script>
+    const btn = document.getElementById("chat-btn");
+    const box = document.getElementById("chat-box");
+
+    btn.onclick = () => {
+        box.style.display = box.style.display === "block" ? "none" : "block";
+    };
+
+    box.style.display = "none";
+</script>
+
+</body>
+</html>
