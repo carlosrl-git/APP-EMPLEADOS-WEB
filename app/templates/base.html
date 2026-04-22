@@ -1,4 +1,4 @@
-﻿<!D<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -293,12 +293,12 @@
             {% if rol == 'admin' %}
             <a class='nav-link {% if active_page == "usuarios" %}active{% endif %}' href="/usuarios">Usuarios</a>
             {% endif %}
-            <a class='nav-link {% if active_page == "departamentos" %}active{% endif %}' href="/departamentos">Departamentos</a>
 
             <div class="nav-group">Operativa</div>
             <a class='nav-link {% if active_page == "tareas" %}active{% endif %}' href="/tareas">Tareas</a>
             <a class='nav-link {% if active_page == "incidencias" %}active{% endif %}' href="/incidencias">Incidencias</a>
             <a class='nav-link {% if active_page == "turnos" %}active{% endif %}' href="/turnos">Turnos</a>
+            <a class='nav-link {% if active_page == "rutas" %}active{% endif %}' href="/rutas">Rutas</a>
 
             <div class="nav-group">Control horario</div>
             <a class='nav-link {% if active_page == "horas" %}active{% endif %}' href="/horas">Horas</a>
@@ -307,6 +307,9 @@
             <div class="nav-group">Inventario</div>
             <a class='nav-link {% if active_page == "productos" %}active{% endif %}' href="/productos">Productos</a>
             <a class='nav-link {% if active_page == "zonas" %}active{% endif %}' href="/zonas">Zonas</a>
+
+            <div class="nav-group">Soporte</div>
+            <a class='nav-link {% if active_page == "tickets" %}active{% endif %}' href="/tickets">Tickets</a>
 
             <div class="nav-group">Sesión</div>
             <a class="nav-link" href="/logout">Cerrar sesión</a>
@@ -420,11 +423,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-

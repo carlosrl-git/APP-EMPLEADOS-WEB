@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
+from html import escape
 from io import BytesIO
 import os
 import random
@@ -96,6 +97,58 @@ def send_reset_email(to_email: str, code: str) -> bool:
         return False
 
 
+def send_ticket_email(ticket: dict) -> bool:
+    smtp_host = os.getenv("SMTP_HOST")
+    smtp_port = os.getenv("SMTP_PORT")
+    smtp_user = os.getenv("SMTP_USER")
+    smtp_password = os.getenv("SMTP_PASSWORD")
+    from_email = os.getenv("SMTP_FROM") or smtp_user
+    support_to = (
+        os.getenv("TICKETS_TO_EMAIL")
+        or os.getenv("SUPPORT_EMAIL")
+        or os.getenv("PRESUPUESTO_EMAIL")
+        or from_email
+    )
+
+    if not all([smtp_host, smtp_port, smtp_user, smtp_password, from_email, support_to]):
+        print("[TICKET CORREO] Variables SMTP incompletas. No se envió el aviso.")
+        return False
+
+    body = (
+        "Se ha creado un nuevo ticket desde la app.\n\n"
+        f"ID: {ticket.get('id')}\n"
+        f"Usuario: {ticket.get('nombre_usuario')}\n"
+        f"Email: {ticket.get('email_usuario')}\n"
+        f"Título: {ticket.get('titulo')}\n"
+        f"Descripción: {ticket.get('descripcion')}\n"
+        f"Tipo: {ticket.get('tipo')}\n"
+        f"Prioridad: {ticket.get('prioridad')}\n"
+        f"Estado: {ticket.get('estado')}\n"
+        f"Fecha: {ticket.get('fecha_creacion')}\n"
+    )
+
+    msg = MIMEText(body, "plain", "utf-8")
+    msg["Subject"] = f"[Ticket #{ticket.get('id')}] {ticket.get('titulo')}"
+    msg["From"] = from_email
+    msg["To"] = support_to
+    if ticket.get("email_usuario"):
+        msg["Reply-To"] = ticket["email_usuario"]
+
+    try:
+        server = smtplib.SMTP(smtp_host, int(smtp_port), timeout=20)
+        server.ehlo()
+        server.starttls()
+        server.ehlo()
+        server.login(smtp_user, smtp_password)
+        server.sendmail(from_email, [support_to], msg.as_string())
+        server.quit()
+        print(f"[TICKET CORREO] Ticket enviado correctamente a {support_to}")
+        return True
+    except Exception as e:
+        print(f"[TICKET CORREO ERROR] {e}")
+        return False
+
+
 def get_client_ip(request: Request) -> str:
     forwarded = request.headers.get("x-forwarded-for")
     if forwarded:
@@ -153,6 +206,11 @@ def login_page(request: Request):
     response = render_template(request, "login.html", {"error": ""})
     response.delete_cookie("session_user")
     return response
+
+
+@app.get("/login")
+def login_redirect():
+    return RedirectResponse(url="/", status_code=303)
 
 
 @app.post("/login", response_class=HTMLResponse)
@@ -437,6 +495,7 @@ def ficha_trabajador(request: Request, id: int):
         "active_page": "trabajadores"
     })
 
+
 @app.get("/trabajadores/editar/{id}", response_class=HTMLResponse)
 def editar_trabajador_page(request: Request, id: int):
     username, rol, response = require_admin(request)
@@ -628,6 +687,253 @@ def cambiar_estado_incidencia(request: Request, id: int, nuevo_estado: str):
         )
 
     return RedirectResponse(url="/incidencias", status_code=303)
+
+
+@app.get("/tickets", response_class=HTMLResponse)
+def ver_tickets(request: Request, ok: str = "", error: str = ""):
+    username, rol, response = require_login(request)
+    if response:
+        return response
+
+    with engine.begin() as conn:
+        usuario_actual = conn.execute(
+            text("SELECT username, email, rol FROM usuarios WHERE username = :u"),
+            {"u": username},
+        ).mappings().first()
+
+        email_actual = (usuario_actual["email"] or "").strip() if usuario_actual else ""
+
+        if rol == "admin":
+            tickets = conn.execute(
+                text("""
+                    SELECT id, nombre_usuario, email_usuario, titulo, descripcion, tipo, prioridad, estado, fecha_creacion
+                    FROM tickets
+                    ORDER BY id DESC
+                """)
+            ).mappings().all()
+        else:
+            tickets = conn.execute(
+                text("""
+                    SELECT id, nombre_usuario, email_usuario, titulo, descripcion, tipo, prioridad, estado, fecha_creacion
+                    FROM tickets
+                    WHERE LOWER(email_usuario) = LOWER(:email_usuario)
+                    ORDER BY id DESC
+                """),
+                {"email_usuario": email_actual},
+            ).mappings().all()
+
+    ok_html = ""
+    error_html = ""
+
+    if ok:
+        ok_html = '<div style="margin-bottom:16px;padding:12px 16px;background:#133a1b;border:1px solid #1e6b2d;border-radius:10px;color:#d8ffd8;">Ticket creado correctamente.</div>'
+    if error:
+        error_html = f'<div style="margin-bottom:16px;padding:12px 16px;background:#3a1313;border:1px solid #6b1e1e;border-radius:10px;color:#ffd8d8;">{escape(error)}</div>'
+
+    filas = ""
+    for t in tickets:
+        filas += f"""
+        <tr>
+            <td style="padding:10px;border-bottom:1px solid #2a2a2a;">{t['id']}</td>
+            <td style="padding:10px;border-bottom:1px solid #2a2a2a;">{escape(t['nombre_usuario'] or '')}</td>
+            <td style="padding:10px;border-bottom:1px solid #2a2a2a;">{escape(t['email_usuario'] or '')}</td>
+            <td style="padding:10px;border-bottom:1px solid #2a2a2a;">{escape(t['titulo'] or '')}</td>
+            <td style="padding:10px;border-bottom:1px solid #2a2a2a;">{escape((t['descripcion'] or '')[:120])}</td>
+            <td style="padding:10px;border-bottom:1px solid #2a2a2a;">{escape(t['tipo'] or '')}</td>
+            <td style="padding:10px;border-bottom:1px solid #2a2a2a;">{escape(t['prioridad'] or '')}</td>
+            <td style="padding:10px;border-bottom:1px solid #2a2a2a;">{escape(t['estado'] or '')}</td>
+            <td style="padding:10px;border-bottom:1px solid #2a2a2a;">{escape(str(t['fecha_creacion'] or ''))}</td>
+        </tr>
+        """
+
+    if not filas:
+        filas = """
+        <tr>
+            <td colspan="9" style="padding:16px;border-bottom:1px solid #2a2a2a;">No hay tickets registrados.</td>
+        </tr>
+        """
+
+    html = f"""
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <title>Tickets | App Empleados</title>
+        <link rel="stylesheet" href="/static/styles.css">
+    </head>
+    <body style="background:#0f0f0f;color:#fff;font-family:Arial,sans-serif;margin:0;padding:0;">
+        <div style="max-width:1400px;margin:0 auto;padding:24px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:24px;">
+                <div>
+                    <h1 style="margin:0 0 6px 0;">Soporte / Tickets</h1>
+                    <p style="margin:0;color:#bdbdbd;">Crea incidencias o peticiones sobre la aplicación.</p>
+                </div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <a href="/dashboard" style="text-decoration:none;padding:10px 16px;background:#1f1f1f;color:#fff;border:1px solid #333;border-radius:10px;">Volver</a>
+                    <a href="/logout" style="text-decoration:none;padding:10px 16px;background:#1f1f1f;color:#fff;border:1px solid #333;border-radius:10px;">Salir</a>
+                </div>
+            </div>
+
+            {ok_html}
+            {error_html}
+
+            <div style="background:#171717;border:1px solid #2a2a2a;border-radius:16px;padding:20px;margin-bottom:24px;">
+                <h2 style="margin-top:0;">Nuevo ticket</h2>
+                <form method="post" action="/tickets/nuevo" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;">
+                    <div>
+                        <label style="display:block;margin-bottom:6px;">Nombre</label>
+                        <input name="nombre_usuario" value="{escape(username)}" required
+                               style="width:100%;padding:12px;border-radius:10px;border:1px solid #333;background:#101010;color:#fff;">
+                    </div>
+                    <div>
+                        <label style="display:block;margin-bottom:6px;">Email</label>
+                        <input name="email_usuario" value="{escape(email_actual)}" required
+                               style="width:100%;padding:12px;border-radius:10px;border:1px solid #333;background:#101010;color:#fff;">
+                    </div>
+                    <div>
+                        <label style="display:block;margin-bottom:6px;">Tipo</label>
+                        <select name="tipo"
+                                style="width:100%;padding:12px;border-radius:10px;border:1px solid #333;background:#101010;color:#fff;">
+                            <option value="peticion">Petición</option>
+                            <option value="incidencia">Incidencia</option>
+                            <option value="mejora">Mejora</option>
+                            <option value="error">Error</option>
+                            <option value="soporte">Soporte</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block;margin-bottom:6px;">Prioridad</label>
+                        <select name="prioridad"
+                                style="width:100%;padding:12px;border-radius:10px;border:1px solid #333;background:#101010;color:#fff;">
+                            <option value="baja">Baja</option>
+                            <option value="media" selected>Media</option>
+                            <option value="alta">Alta</option>
+                            <option value="urgente">Urgente</option>
+                        </select>
+                    </div>
+                    <div style="grid-column:1/-1;">
+                        <label style="display:block;margin-bottom:6px;">Título</label>
+                        <input name="titulo" required
+                               style="width:100%;padding:12px;border-radius:10px;border:1px solid #333;background:#101010;color:#fff;">
+                    </div>
+                    <div style="grid-column:1/-1;">
+                        <label style="display:block;margin-bottom:6px;">Descripción</label>
+                        <textarea name="descripcion" rows="6" required
+                                  style="width:100%;padding:12px;border-radius:10px;border:1px solid #333;background:#101010;color:#fff;resize:vertical;"></textarea>
+                    </div>
+                    <div style="grid-column:1/-1;">
+                        <button type="submit"
+                                style="padding:12px 18px;background:#c00000;color:#fff;border:none;border-radius:10px;cursor:pointer;font-weight:700;">
+                            Crear ticket
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div style="background:#171717;border:1px solid #2a2a2a;border-radius:16px;padding:20px;">
+                <h2 style="margin-top:0;">Listado de tickets</h2>
+                <div style="overflow:auto;">
+                    <table style="width:100%;border-collapse:collapse;min-width:1100px;">
+                        <thead>
+                            <tr style="background:#101010;">
+                                <th style="padding:10px;text-align:left;border-bottom:1px solid #333;">ID</th>
+                                <th style="padding:10px;text-align:left;border-bottom:1px solid #333;">Usuario</th>
+                                <th style="padding:10px;text-align:left;border-bottom:1px solid #333;">Email</th>
+                                <th style="padding:10px;text-align:left;border-bottom:1px solid #333;">Título</th>
+                                <th style="padding:10px;text-align:left;border-bottom:1px solid #333;">Descripción</th>
+                                <th style="padding:10px;text-align:left;border-bottom:1px solid #333;">Tipo</th>
+                                <th style="padding:10px;text-align:left;border-bottom:1px solid #333;">Prioridad</th>
+                                <th style="padding:10px;text-align:left;border-bottom:1px solid #333;">Estado</th>
+                                <th style="padding:10px;text-align:left;border-bottom:1px solid #333;">Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filas}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+    return HTMLResponse(content=html)
+
+
+@app.post("/tickets/nuevo")
+def crear_ticket_web(
+    request: Request,
+    nombre_usuario: str = Form(...),
+    email_usuario: str = Form(...),
+    titulo: str = Form(...),
+    descripcion: str = Form(...),
+    tipo: str = Form("peticion"),
+    prioridad: str = Form("media"),
+):
+    username, rol, response = require_login(request)
+    if response:
+        return response
+
+    nombre_usuario = (nombre_usuario or "").strip()
+    email_usuario = (email_usuario or "").strip()
+    titulo = (titulo or "").strip()
+    descripcion = (descripcion or "").strip()
+    tipo = (tipo or "peticion").strip().lower()
+    prioridad = (prioridad or "media").strip().lower()
+
+    tipos_validos = {"peticion", "incidencia", "mejora", "error", "soporte"}
+    prioridades_validas = {"baja", "media", "alta", "urgente"}
+
+    if not nombre_usuario or not email_usuario or not titulo or not descripcion:
+        return RedirectResponse(url="/tickets?error=Todos+los+campos+son+obligatorios", status_code=303)
+
+    if tipo not in tipos_validos:
+        tipo = "peticion"
+
+    if prioridad not in prioridades_validas:
+        prioridad = "media"
+
+    try:
+        with engine.begin() as conn:
+            ticket = conn.execute(
+                text("""
+                    INSERT INTO tickets (
+                        nombre_usuario,
+                        email_usuario,
+                        titulo,
+                        descripcion,
+                        tipo,
+                        prioridad
+                    )
+                    VALUES (
+                        :nombre_usuario,
+                        :email_usuario,
+                        :titulo,
+                        :descripcion,
+                        :tipo,
+                        :prioridad
+                    )
+                    RETURNING id, nombre_usuario, email_usuario, titulo, descripcion, tipo, prioridad, estado, fecha_creacion
+                """),
+                {
+                    "nombre_usuario": nombre_usuario,
+                    "email_usuario": email_usuario,
+                    "titulo": titulo,
+                    "descripcion": descripcion,
+                    "tipo": tipo,
+                    "prioridad": prioridad,
+                }
+            ).mappings().first()
+
+        if ticket:
+            send_ticket_email(dict(ticket))
+
+        return RedirectResponse(url="/tickets?ok=1", status_code=303)
+
+    except Exception as e:
+        print(f"[TICKET NUEVO ERROR] {e}")
+        return RedirectResponse(url="/tickets?error=Error+al+crear+el+ticket", status_code=303)
 
 
 @app.get("/tareas", response_class=HTMLResponse)
@@ -985,6 +1291,45 @@ def toggle_usuario(request: Request, id: int):
             SET activo = NOT activo
             WHERE id = :id
         """), {"id": id})
+
+    return RedirectResponse(url="/usuarios", status_code=303)
+
+
+@app.get("/usuarios/eliminar/{id}")
+def eliminar_usuario(request: Request, id: int):
+    username, rol, response = require_admin(request)
+    if response:
+        return response
+
+    with engine.begin() as conn:
+        usuario_objetivo = conn.execute(
+            text("SELECT id, username, rol FROM usuarios WHERE id = :id"),
+            {"id": id}
+        ).mappings().first()
+
+        if not usuario_objetivo:
+            return RedirectResponse(url="/usuarios", status_code=303)
+
+        if usuario_objetivo["username"] == username:
+            return RedirectResponse(url="/usuarios", status_code=303)
+
+        admins_restantes = conn.execute(
+            text("SELECT COUNT(*) FROM usuarios WHERE rol = 'admin' AND activo = true AND id <> :id"),
+            {"id": id}
+        ).scalar()
+
+        if usuario_objetivo["rol"] == "admin" and admins_restantes == 0:
+            return RedirectResponse(url="/usuarios", status_code=303)
+
+        conn.execute(
+            text("DELETE FROM ai_logs WHERE usuario = :usuario"),
+            {"usuario": usuario_objetivo["username"]}
+        )
+
+        conn.execute(
+            text("DELETE FROM usuarios WHERE id = :id"),
+            {"id": id}
+        )
 
     return RedirectResponse(url="/usuarios", status_code=303)
 
@@ -1369,6 +1714,114 @@ def ver_rutas(request: Request):
         "trabajadores": trabajadores,
         "active_page": "rutas",
     })
+
+
+@app.get("/rutas/exportar")
+def exportar_rutas_excel(request: Request):
+    username, rol, response = require_login(request)
+    if response:
+        return response
+
+    with engine.begin() as conn:
+        rutas = conn.execute(text("""
+            SELECT
+                r.id,
+                r.fecha,
+                r.hora_inicio_jornada,
+                r.hora_fin_jornada,
+                r.total_horas,
+                r.observaciones_generales,
+                t.nombre,
+                t.apellidos
+            FROM rutas r
+            LEFT JOIN trabajadores t ON t.id = r.trabajador_id
+            ORDER BY r.fecha DESC, r.hora_inicio_jornada ASC, r.id DESC
+        """)).mappings().all()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Rutas"
+
+    rojo = PatternFill("solid", fgColor="C00000")
+    negro = PatternFill("solid", fgColor="111111")
+    gris = PatternFill("solid", fgColor="F2F2F2")
+    blanca = Font(color="FFFFFF", bold=True)
+    negra = Font(color="000000", bold=True)
+    titulo = Font(size=16, bold=True)
+    borde = Border(
+        left=Side(style="thin", color="000000"),
+        right=Side(style="thin", color="000000"),
+        top=Side(style="thin", color="000000"),
+        bottom=Side(style="thin", color="000000"),
+    )
+    centrado = Alignment(horizontal="center", vertical="center")
+    izquierda = Alignment(horizontal="left", vertical="center", wrap_text=True)
+
+    ws.merge_cells("A1:G1")
+    ws["A1"] = "LISTADO DE RUTAS / JORNADAS"
+    ws["A1"].font = titulo
+    ws["A1"].alignment = centrado
+
+    ws["A3"] = "Total rutas"
+    ws["B3"] = len(rutas)
+
+    ws["A3"].fill = negro
+    ws["A3"].font = blanca
+    ws["A3"].border = borde
+    ws["A3"].alignment = izquierda
+
+    ws["B3"].fill = gris
+    ws["B3"].font = negra
+    ws["B3"].border = borde
+    ws["B3"].alignment = izquierda
+
+    encabezados = ["ID", "Empleado", "Fecha", "Inicio", "Fin", "Horas", "Observaciones"]
+    fila = 5
+
+    for i, e in enumerate(encabezados, start=1):
+        c = ws.cell(row=fila, column=i, value=e)
+        c.fill = rojo
+        c.font = blanca
+        c.border = borde
+        c.alignment = centrado
+
+    fila += 1
+    for r in rutas:
+        empleado = f"{r['nombre'] or ''} {r['apellidos'] or ''}".strip()
+        valores = [
+            r["id"],
+            empleado,
+            str(r["fecha"] or ""),
+            str(r["hora_inicio_jornada"] or ""),
+            str(r["hora_fin_jornada"] or ""),
+            r["total_horas"] if r["total_horas"] is not None else "",
+            r["observaciones_generales"] or "",
+        ]
+
+        for col, val in enumerate(valores, start=1):
+            c = ws.cell(row=fila, column=col, value=val)
+            c.border = borde
+            c.alignment = centrado if col in (1, 3, 4, 5, 6) else izquierda
+
+        fila += 1
+
+    ws.column_dimensions["A"].width = 10
+    ws.column_dimensions["B"].width = 28
+    ws.column_dimensions["C"].width = 16
+    ws.column_dimensions["D"].width = 14
+    ws.column_dimensions["E"].width = 14
+    ws.column_dimensions["F"].width = 12
+    ws.column_dimensions["G"].width = 40
+
+    bio = BytesIO()
+    wb.save(bio)
+    bio.seek(0)
+
+    return StreamingResponse(
+        bio,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=rutas.xlsx"},
+    )
 
 
 @app.post("/rutas/nueva")
@@ -2027,6 +2480,7 @@ def ver_departamentos(request: Request):
         "active_page": "departamentos",
     })
 
+
 @app.get("/ai/logs", response_class=HTMLResponse)
 def ai_logs(request: Request):
     username, rol, response = require_admin(request)
@@ -2042,5 +2496,5 @@ def ai_logs(request: Request):
         "logs": logs,
         "username": username,
         "rol": rol,
-        "active_page": "ai_logs"
+        "active_page": "ai_logs",
     })
