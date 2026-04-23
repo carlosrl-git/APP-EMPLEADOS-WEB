@@ -7,7 +7,6 @@ import os
 import random
 import smtplib
 
-from app.ai.routes import router as ai_router
 from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -26,21 +25,29 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
+from app.ai.routes import router as ai_router
 from app.core.config import settings
-from slowapi import Limiter
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
+from app.core.security import get_empresa_id
+from app.core.password_reset_security import (
+    normalize_email,
+    generate_reset_token,
+    hash_reset_token,
+    token_expiry,
+    is_token_format_valid,
+    is_expired,
+)
 
+# CONFIG
 APP_ENV = settings.APP_ENV
 SESSION_SECRET = settings.SESSION_SECRET
 SESSION_HTTPS_ONLY = settings.SESSION_HTTPS_ONLY
 
+# APP
 app = FastAPI(title="App Empleados Web")
 
 limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
 app.state.limiter = limiter
 
-from app.ai.routes import router as ai_router
 
 @app.exception_handler(RateLimitExceeded)
 async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
