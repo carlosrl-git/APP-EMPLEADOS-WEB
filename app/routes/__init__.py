@@ -1,0 +1,1 @@
+from app.routes.trabajadores import router as trabajadores_router

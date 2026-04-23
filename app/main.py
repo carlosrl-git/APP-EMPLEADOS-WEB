@@ -1,4 +1,6 @@
 
+from app.core.config import settings
+from app.routes import trabajadores_router
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from html import escape
@@ -6,6 +8,8 @@ from io import BytesIO
 import os
 import random
 import smtplib
+
+
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Form, Request
