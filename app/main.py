@@ -1,3 +1,4 @@
+
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from html import escape
@@ -9,7 +10,7 @@ import smtplib
 from dotenv import load_dotenv
 from fastapi import FastAPI, Form, Request
 from app.ai.routes import router as ai_router
-from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from openpyxl import Workbook
@@ -17,6 +18,11 @@ from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from passlib.hash import pbkdf2_sha256
 from sqlalchemy import create_engine, text
 from starlette.middleware.sessions import SessionMiddleware
+
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from app.core.config import settings
 
@@ -29,6 +35,74 @@ SESSION_SECRET = os.getenv("SESSION_SECRET") or os.getenv("SECRET_KEY") or "CAMB
 SESSION_HTTPS_ONLY = APP_ENV != "development"
 
 app = FastAPI(title="App Empleados Web")
+
+# Rate limit global: 100 peticiones por minuto por IP
+limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
+app.state.limiter = limiter
+
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    accept = (request.headers.get("accept") or "").lower()
+
+    if "text/html" in accept:
+        return HTMLResponse(
+            content="""
+            <!DOCTYPE html>
+            <html lang="es">
+            <head>
+                <meta charset="UTF-8">
+                <title>Demasiadas peticiones</title>
+                <style>
+                    body{
+                        margin:0;
+                        background:#0b0b0b;
+                        color:#fff;
+                        font-family:Arial,sans-serif;
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        min-height:100vh;
+                    }
+                    .box{
+                        max-width:520px;
+                        width:90%;
+                        background:#151515;
+                        border:1px solid #2f2f2f;
+                        border-radius:18px;
+                        padding:28px;
+                        box-shadow:0 20px 50px rgba(0,0,0,.35);
+                        text-align:center;
+                    }
+                    h1{
+                        margin:0 0 12px 0;
+                        color:#ff4d6d;
+                    }
+                    p{
+                        margin:0;
+                        color:#d0d0d0;
+                        line-height:1.5;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="box">
+                    <h1>Demasiadas peticiones</h1>
+                    <p>Has superado el límite permitido temporalmente. Espera un momento e inténtalo otra vez.</p>
+                </div>
+            </body>
+            </html>
+            """,
+            status_code=429,
+        )
+
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "Demasiadas peticiones. Inténtalo más tarde."}
+    )
+
+
+app.add_middleware(SlowAPIMiddleware)
 app.include_router(ai_router)
 
 app.add_middleware(
@@ -214,6 +288,7 @@ def login_redirect():
 
 
 @app.post("/login", response_class=HTMLResponse)
+@limiter.limit("10/minute")
 def login(request: Request, username: str = Form(...), password: str = Form(...)):
     now = datetime.utcnow()
     username = (username or "").strip()
@@ -862,6 +937,7 @@ def ver_tickets(request: Request, ok: str = "", error: str = ""):
 
 
 @app.post("/tickets/nuevo")
+@limiter.limit("15/minute")
 def crear_ticket_web(
     request: Request,
     nombre_usuario: str = Form(...),
@@ -1348,6 +1424,7 @@ def forgot_password_page(request: Request):
 
 
 @app.post("/forgot-password", response_class=HTMLResponse)
+@limiter.limit("5/minute")
 def forgot_password(request: Request, email: str = Form(...)):
     code = str(random.randint(100000, 999999))
     expires_at = datetime.utcnow() + timedelta(minutes=10)
@@ -1395,6 +1472,7 @@ def reset_password_page(request: Request):
 
 
 @app.post("/reset-password", response_class=HTMLResponse)
+@limiter.limit("5/minute")
 def reset_password(
     request: Request,
     email: str = Form(...),
