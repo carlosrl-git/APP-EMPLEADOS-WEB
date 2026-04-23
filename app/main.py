@@ -1,6 +1,3 @@
-
-from app.core.config import settings
-from app.routes import trabajadores_router
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from html import escape
@@ -9,9 +6,6 @@ import os
 import random
 import smtplib
 
-
-
-from dotenv import load_dotenv
 from fastapi import FastAPI, Form, Request
 from app.ai.routes import router as ai_router
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse, JSONResponse
@@ -30,13 +24,10 @@ from slowapi.middleware import SlowAPIMiddleware
 
 from app.core.config import settings
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ENV_PATH = os.path.join(BASE_DIR, ".env")
-load_dotenv(dotenv_path=ENV_PATH)
 
-APP_ENV = os.getenv("APP_ENV", "production").lower()
-SESSION_SECRET = os.getenv("SESSION_SECRET") or os.getenv("SECRET_KEY") or "CAMBIA_ESTA_CLAVE_SUPER_LARGA_Y_RANDOM_EN_RENDER"
-SESSION_HTTPS_ONLY = APP_ENV != "development"
+APP_ENV = settings.APP_ENV
+SESSION_SECRET = settings.SESSION_SECRET
+SESSION_HTTPS_ONLY = settings.SESSION_HTTPS_ONLY
 
 app = FastAPI(title="App Empleados Web")
 
@@ -136,8 +127,12 @@ async def security_headers(request: Request, call_next):
 
 def render_template(request: Request, name: str, context: dict, status_code: int = 200):
     context["request"] = request
-    return templates.TemplateResponse(request=request, name=name, context=context, status_code=status_code)
-
+    return templates.TemplateResponse(
+    request=request,
+    name=name,
+    context=context,
+    status_code=status_code,
+   )
 
 def send_reset_email(to_email: str, code: str) -> bool:
     smtp_host = os.getenv("SMTP_HOST")
@@ -235,9 +230,14 @@ def get_client_ip(request: Request) -> str:
 
 
 def get_current_username(request: Request):
+    username = request.session.get("username")
+    if username:
+        return username
+
     username = request.session.get("session_user")
     if username:
         return username
+
     legacy_cookie = request.cookies.get("session_user")
     return legacy_cookie
 
@@ -253,16 +253,28 @@ def get_current_role(username: str):
     return user["rol"] if user else None
 
 
+def get_current_empresa_id(request: Request):
+    empresa_id = request.session.get("empresa_id")
+    if empresa_id is None:
+        return None
+    return int(empresa_id)
+
+
 def require_login(request: Request):
     username = get_current_username(request)
     if not username:
         return None, None, RedirectResponse(url="/", status_code=303)
-    rol = get_current_role(username)
+
+    rol = request.session.get("rol") or request.session.get("session_role")
+    if not rol:
+        rol = get_current_role(username)
+
     if not rol:
         request.session.clear()
         response = RedirectResponse(url="/", status_code=303)
         response.delete_cookie("session_user")
         return None, None, response
+
     return username, rol, None
 
 
@@ -328,7 +340,7 @@ def login(request: Request, username: str = Form(...), password: str = Form(...)
 
             user = conn.execute(
                 text("""
-                    SELECT id, username, email, password_hash, rol, activo
+                    SELECT id, username, email, password_hash, rol, activo, empresa_id
                     FROM usuarios
                     WHERE username = :u
                 """),
@@ -336,11 +348,33 @@ def login(request: Request, username: str = Form(...), password: str = Form(...)
             ).mappings().first()
 
             if user and user["activo"] and pbkdf2_sha256.verify(password, user["password_hash"]):
-                conn.execute(text("DELETE FROM login_attempts WHERE username = :u"), {"u": username})
+                if user["empresa_id"] is None:
+                    return render_template(
+                        request,
+                        "login.html",
+                        {"error": "Usuario sin empresa asignada. Contacta con el administrador."},
+                        403,
+                    )
+
+                conn.execute(
+                    text("DELETE FROM login_attempts WHERE username = :u"),
+                    {"u": username},
+                )
+
                 request.session.clear()
-                request.session["session_user"] = username
+
+                # Compatibilidad con el sistema antiguo
+                request.session["session_user"] = user["username"]
                 request.session["session_role"] = user["rol"]
                 request.session["client_ip"] = ip
+
+                # Nuevo sistema para multiempresa
+                request.session["user_id"] = user["id"]
+                request.session["username"] = user["username"]
+                request.session["rol"] = user["rol"]
+                request.session["empresa_id"] = user["empresa_id"]
+                request.session["nivel"] = 100 if user["rol"] == "admin" else 70
+
                 response = RedirectResponse(url="/dashboard", status_code=303)
                 response.delete_cookie("session_user")
                 return response
