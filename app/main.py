@@ -1,3 +1,4 @@
+
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from html import escape
@@ -6,15 +7,18 @@ import os
 import random
 import smtplib
 
-from fastapi import FastAPI, Form, Request
 from app.ai.routes import router as ai_router
+from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+
+from sqlalchemy import create_engine, text
+from passlib.hash import pbkdf2_sha256
+
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
-from passlib.hash import pbkdf2_sha256
-from sqlalchemy import create_engine, text
+
 from starlette.middleware.sessions import SessionMiddleware
 
 from slowapi import Limiter
@@ -23,7 +27,9 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
 from app.core.config import settings
-
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 APP_ENV = settings.APP_ENV
 SESSION_SECRET = settings.SESSION_SECRET
@@ -31,10 +37,10 @@ SESSION_HTTPS_ONLY = settings.SESSION_HTTPS_ONLY
 
 app = FastAPI(title="App Empleados Web")
 
-# Rate limit global: 100 peticiones por minuto por IP
 limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
 app.state.limiter = limiter
 
+from app.ai.routes import router as ai_router
 
 @app.exception_handler(RateLimitExceeded)
 async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
@@ -134,7 +140,7 @@ def render_template(request: Request, name: str, context: dict, status_code: int
     status_code=status_code,
    )
 
-def send_reset_email(to_email: str, code: str) -> bool:
+def send_reset_email(to_email: str, reset_token: str) -> bool:
     smtp_host = os.getenv("SMTP_HOST")
     smtp_port = os.getenv("SMTP_PORT")
     smtp_user = os.getenv("SMTP_USER")
@@ -146,8 +152,10 @@ def send_reset_email(to_email: str, code: str) -> bool:
         return False
 
     msg = MIMEText(
-        f"Tu código de recuperación es: {code}\n\n"
-        "Si no solicitaste este cambio, puedes ignorar este correo.",
+        f"Has solicitado restablecer tu contraseña.\n\n"
+        f"Tu token de recuperación es:\n{reset_token}\n\n"
+        f"Este token caduca en 10 minutos y solo puede usarse una vez.\n"
+        f"Si no solicitaste este cambio, ignora este correo.",
         "plain",
         "utf-8",
     )
@@ -1462,31 +1470,34 @@ def forgot_password_page(request: Request):
 
 
 @app.post("/forgot-password", response_class=HTMLResponse)
-@limiter.limit("5/minute")
+@limiter.limit("3/minute")
 def forgot_password(request: Request, email: str = Form(...)):
-    code = str(random.randint(100000, 999999))
-    expires_at = datetime.utcnow() + timedelta(minutes=10)
+    email = normalize_email(email)
+    raw_token = generate_reset_token()
+    token_hash = hash_reset_token(raw_token)
+    expires_at = token_expiry()
 
     try:
         with engine.begin() as conn:
             user = conn.execute(
-                text("SELECT id FROM usuarios WHERE email = :e AND activo = true"),
-                {"e": email.strip()},
+                text("SELECT id FROM usuarios WHERE LOWER(email) = :e AND activo = true"),
+                {"e": email},
             ).mappings().first()
+
 
             if user:
                 conn.execute(
-                    text("DELETE FROM password_resets WHERE email = :e AND used = false"),
-                    {"e": email.strip()},
+                    text("DELETE FROM password_resets WHERE LOWER(email) = :e AND used = false"),
+                    {"e": email},
                 )
                 conn.execute(
                     text("""
                         INSERT INTO password_resets (email, code, expires_at, used)
                         VALUES (:e, :c, :x, false)
                     """),
-                    {"e": email.strip(), "c": code, "x": expires_at},
+                    {"e": email, "c": token_hash, "x": expires_at},
                 )
-                send_reset_email(email.strip(), code)
+                send_reset_email(email, raw_token)
 
         return render_template(
             request,
@@ -1510,13 +1521,16 @@ def reset_password_page(request: Request):
 
 
 @app.post("/reset-password", response_class=HTMLResponse)
-@limiter.limit("5/minute")
+@limiter.limit("3/minute")
 def reset_password(
     request: Request,
     email: str = Form(...),
     code: str = Form(...),
     new_password: str = Form(...),
 ):
+    email = normalize_email(email)
+    code = (code or "").strip()
+
     if len(new_password) < 8:
         return render_template(
             request,
@@ -1525,15 +1539,25 @@ def reset_password(
             400,
         )
 
+    if not is_token_format_valid(code):
+        return render_template(
+            request,
+            "reset_password.html",
+            {"msg": "", "error": "Código inválido"},
+            400,
+        )
+
+    token_hash = hash_reset_token(code)
+
     try:
         with engine.begin() as conn:
             row = conn.execute(text("""
                 SELECT id, email, code, expires_at, used
                 FROM password_resets
-                WHERE email = :e AND code = :c AND used = false
+                WHERE LOWER(email) = :e AND code = :c AND used = false
                 ORDER BY id DESC
                 LIMIT 1
-            """), {"e": email.strip(), "c": code.strip()}).mappings().first()
+            """), {"e": email, "c": token_hash}).mappings().first()
 
             if not row:
                 return render_template(
@@ -1543,7 +1567,7 @@ def reset_password(
                     400,
                 )
 
-            if datetime.utcnow() > row["expires_at"]:
+            if is_expired(row["expires_at"]):
                 return render_template(
                     request,
                     "reset_password.html",
@@ -1552,13 +1576,18 @@ def reset_password(
                 )
 
             new_hash = pbkdf2_sha256.hash(new_password)
+
             conn.execute(
-                text("UPDATE usuarios SET password_hash = :p WHERE email = :e"),
-                {"p": new_hash, "e": email.strip()},
+                text("UPDATE usuarios SET password_hash = :p WHERE LOWER(email) = :e"),
+                {"p": new_hash, "e": email},
             )
             conn.execute(
                 text("UPDATE password_resets SET used = true WHERE id = :id"),
                 {"id": row["id"]},
+            )
+            conn.execute(
+                text("DELETE FROM password_resets WHERE LOWER(email) = :e AND id <> :id"),
+                {"e": email, "id": row["id"]},
             )
 
         return render_template(
