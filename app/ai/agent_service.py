@@ -1,4 +1,4 @@
-﻿import secrets
+import secrets
 import string
 import unicodedata
 
@@ -586,3 +586,4 @@ Escribe 'confirmar' para crearlo."""
         )
 
     return "No he podido interpretar la consulta."
+

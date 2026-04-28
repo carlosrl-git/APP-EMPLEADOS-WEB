@@ -24,7 +24,10 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
-from app.ai.routes import router as ai_router
+import os
+IA_ENABLED = os.getenv('IA_ENABLED', 'false').lower() == 'true'
+if IA_ENABLED:
+    from app.ai.routes import router as ai_router
 from app.core.config import settings
 from app.core.security import get_empresa_id
 from app.core.password_reset_security import (
@@ -83,7 +86,8 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
 
 
 app.add_middleware(SlowAPIMiddleware)
-app.include_router(ai_router)
+if IA_ENABLED:
+    app.include_router(ai_router)
 
 app.add_middleware(
     SessionMiddleware,
@@ -1509,8 +1513,8 @@ def guardar_usuario(
             conn.execute(
                 text("""
                     INSERT INTO usuarios
-                    (empresa_id, username, email, password_hash, rol, activo, rol_id)
-                    VALUES (:empresa_id, :username, :email, :password_hash, :rol, true, 1)
+                    (empresa_id, username, email, password_hash, rol, activo)
+                    VALUES (:empresa_id, :username, :email, :password_hash, :rol, true)
                 """),
                 {
                     "empresa_id": empresa_id,
@@ -2591,9 +2595,125 @@ def ver_rutas(request: Request):
     return render_template(request, 'rutas.html', {'username': username, 'rol': rol, 'rutas': rutas, 'trabajadores': trabajadores, 'active_page': 'rutas'})
 
 
+@app.get("/forgot-password", response_class=HTMLResponse)
+def forgot_password_page(request: Request):
+    return render_template(request, "forgot_password.html", {"msg": "", "error": ""})
 
 
+@app.get("/reset-password", response_class=HTMLResponse)
+def reset_password_page(request: Request):
+    return render_template(request, "reset_password.html", {"msg": "", "error": ""})
 
+@app.post("/forgot-password", response_class=HTMLResponse)
+@limiter.limit("3/minute")
+def forgot_password(request: Request, email: str = Form(...)):
+    email = normalize_email(email)
+    raw_token = generate_reset_token()
+    token_hash = hash_reset_token(raw_token)
+    expires_at = token_expiry()
+
+    try:
+        with engine.begin() as conn:
+            user = conn.execute(
+                text("""
+                    SELECT id
+                    FROM usuarios
+                    WHERE LOWER(email) = :e
+                    AND activo = true
+                    LIMIT 1
+                """),
+                {"e": email},
+            ).mappings().first()
+
+            if user:
+                conn.execute(
+                    text("""
+                        DELETE FROM password_resets
+                        WHERE LOWER(email) = :e
+                        AND used = false
+                    """),
+                    {"e": email},
+                )
+
+                conn.execute(
+                    text("""
+                        INSERT INTO password_resets (email, code, expires_at, used)
+                        VALUES (:e, :c, :x, false)
+                    """),
+                    {"e": email, "c": token_hash, "x": expires_at},
+                )
+
+                send_reset_email(email, raw_token)
+
+        return render_template(
+            request,
+            "forgot_password.html",
+            {"msg": "Si el correo existe, se enviará un código.", "error": ""},
+        )
+
+    except Exception as e:
+        print(f"[FORGOT PASSWORD ERROR] {e}")
+        return render_template(
+            request,
+            "forgot_password.html",
+            {"msg": "", "error": "Error al procesar la solicitud"},
+            500,
+        )
+
+@app.post("/reset-password", response_class=HTMLResponse)
+@limiter.limit("3/minute")
+def reset_password(
+    request: Request,
+    email: str = Form(...),
+    code: str = Form(...),
+    new_password: str = Form(...),
+):
+    email = normalize_email(email)
+    code = (code or "").strip()
+
+    if len(new_password) < 8:
+        return render_template(request, "reset_password.html", {"msg": "", "error": "La contraseña debe tener al menos 8 caracteres"}, 400)
+
+    if not is_token_format_valid(code):
+        return render_template(request, "reset_password.html", {"msg": "", "error": "Código inválido"}, 400)
+
+    token_hash = hash_reset_token(code)
+
+    try:
+        with engine.begin() as conn:
+            row = conn.execute(text("""
+                SELECT id, email, code, expires_at, used
+                FROM password_resets
+                WHERE LOWER(email) = :e
+                AND code = :c
+                AND used = false
+                ORDER BY id DESC
+                LIMIT 1
+            """), {"e": email, "c": token_hash}).mappings().first()
+
+            if not row:
+                return render_template(request, "reset_password.html", {"msg": "", "error": "Código inválido"}, 400)
+
+            if is_expired(row["expires_at"]):
+                return render_template(request, "reset_password.html", {"msg": "", "error": "Código caducado"}, 400)
+
+            new_hash = pbkdf2_sha256.hash(new_password)
+
+            conn.execute(
+                text("UPDATE usuarios SET password_hash = :p WHERE LOWER(email) = :e"),
+                {"p": new_hash, "e": email},
+            )
+
+            conn.execute(
+                text("UPDATE password_resets SET used = true WHERE id = :id"),
+                {"id": row["id"]},
+            )
+
+        return render_template(request, "reset_password.html", {"msg": "Contraseña cambiada correctamente", "error": ""})
+
+    except Exception as e:
+        print(f"[RESET PASSWORD ERROR] {e}")
+        return render_template(request, "reset_password.html", {"msg": "", "error": "Error al cambiar la contraseña"}, 500)
 
 
 
