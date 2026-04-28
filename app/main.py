@@ -596,11 +596,11 @@ def ficha_trabajador(request: Request, id: int):
         """), {"id": id}).mappings().all()
 
         turnos = conn.execute(text("""
-            SELECT tu.id, tu.fecha, tu.turno, tu.hora_inicio, tu.hora_fin, tu.estado, tu.observaciones, z.nombre AS zona
+            SELECT tu.*
             FROM turnos tu
-            LEFT JOIN zonas z ON tu.zona_id = z.id
+            -- LEFT JOIN eliminado por error zona_id
             WHERE tu.trabajador_id = :id
-            ORDER BY tu.fecha DESC, tu.hora_inicio DESC
+            ORDER BY tu.id DESC
         """), {"id": id}).mappings().all()
 
         rutas = conn.execute(text("""
@@ -1679,7 +1679,7 @@ def exportar_turnos_excel(request: Request):
     with engine.begin() as conn:
         turnos = conn.execute(text("""
             SELECT tu.id, tu.fecha, tu.turno, tu.hora_inicio, tu.hora_fin, tu.estado, tu.observaciones,
-                   z.nombre AS zona, tr.nombre, tr.apellidos
+                   '' AS zona, tr.nombre, tr.apellidos
             FROM turnos tu
             LEFT JOIN trabajadores tr ON tr.id = tu.trabajador_id
             LEFT JOIN zonas z ON z.id = tu.zona_id
