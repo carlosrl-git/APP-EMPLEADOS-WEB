@@ -1,65 +1,159 @@
-{% extends 'base.html' %}
-{% block title %}Ficha de la jornada abierta | App Empleados{% endblock %}
+﻿{% extends 'base.html' %}
+{% block title %}Gestionar jornada | App Empleados{% endblock %}
 {% block content %}
-<div class="card" style="padding:22px;">
-  <h1 class="page-title" style="font-size:30px; margin-bottom:8px;">Ficha de la jornada abierta</h1>
-  <p style="color:#ff4d4f; font-weight:800; margin:0 0 26px 0;">
-    Jornada abierta: {{ ruta.trabajador_nombre or '-' }} {{ ruta.trabajador_apellidos or '' }} | {{ ruta.fecha }} | {{ ruta.hora_inicio_jornada or '-' }} - {{ ruta.hora_fin_jornada or '-' }}
-  </p>
 
-  <form method="post" action="/rutas/{{ ruta.id }}/lineas/nueva" style="display:grid; grid-template-columns:180px 180px 1fr; gap:18px; align-items:end; margin-bottom:24px;">
-    <div>
-      <label style="display:block; margin-bottom:8px;">Hora inicio</label>
-      <input type="time" name="hora_inicio" class="input" required>
-    </div>
-    <div>
-      <label style="display:block; margin-bottom:8px;">Hora fin</label>
-      <input type="time" name="hora_fin" class="input" required>
-    </div>
-    <div style="grid-column:1 / span 2;">
-      <label style="display:block; margin-bottom:8px;">Tarea</label>
-      <input type="text" name="tarea" class="input" required placeholder="Escribe la tarea">
-    </div>
-    <div style="grid-column:1 / -1; display:flex; gap:12px; margin-top:6px;">
-      <button type="submit" class="btn" style="width:auto; min-width:150px;">Añadir línea</button>
-      <a href="/rutas" class="btn-inline secondary">Volver a jornadas</a>
-    </div>
-  </form>
+<style>
+  .jornada-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 22px;
+    max-width: 1200px;
+  }
 
-  <div style="overflow-x:auto;">
-    <table style="width:100%; border-collapse:collapse; min-width:1050px;">
-      <thead>
-        <tr style="background:#161616;">
-          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">ID</th>
-          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Hora inicio</th>
-          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Hora fin</th>
-          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Duración</th>
-          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Tarea</th>
-          <th style="text-align:left; padding:14px; border-bottom:1px solid #2f2f2f;">Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for l in lineas %}
-        <tr>
-          <td style="padding:14px; border-bottom:1px solid #242424;">{{ l.id }}</td>
-          <td style="padding:14px; border-bottom:1px solid #242424;">{{ l.hora_inicio or '-' }}</td>
-          <td style="padding:14px; border-bottom:1px solid #242424;">{{ l.hora_fin or '-' }}</td>
-          <td style="padding:14px; border-bottom:1px solid #242424;">{{ l.duracion_minutos or 0 }} min</td>
-          <td style="padding:14px; border-bottom:1px solid #242424;">{{ l.zona or '-' }}</td>
-          <td style="padding:14px; border-bottom:1px solid #242424; white-space:nowrap;">
-            {% if rol == 'admin' %}
-            <a href="/rutas/{{ ruta.id }}/lineas/eliminar/{{ l.id }}" class="btn-inline secondary">Eliminar línea</a>
-            {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-        {% if not lineas %}
-        <tr>
-          <td colspan="6" style="padding:18px; border-bottom:1px solid #242424;">No hay líneas añadidas todavía en esta jornada.</td>
-        </tr>
-        {% endif %}
-      </tbody>
-    </table>
+  .jornada-card {
+    padding: 24px;
+    background: #111;
+    border: 1px solid #242424;
+    border-radius: 18px;
+  }
+
+  .jornada-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(240px, 1fr));
+    gap: 18px;
+  }
+
+  .jornada-form .full {
+    grid-column: 1 / -1;
+  }
+
+  .jornada-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .jornada-table {
+    width: 100%;
+    min-width: 900px;
+    border-collapse: collapse;
+  }
+
+  .jornada-table th,
+  .jornada-table td {
+    padding: 14px;
+    border-bottom: 1px solid #242424;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .jornada-table thead {
+    background: #161616;
+  }
+
+  @media (max-width: 800px) {
+    .jornada-form {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="top-actions">
+  <div>
+    <h1 class="page-title">Gestionar jornada</h1>
+    <p class="page-subtitle">Añade y consulta las tareas internas de esta jornada.</p>
   </div>
+  <a href="/rutas" class="btn-inline secondary">Volver</a>
 </div>
+
+<div class="jornada-grid">
+
+  <div class="jornada-card">
+    <h2 style="margin-top:0;">{{ ruta.trabajador_nombre or '-' }} {{ ruta.trabajador_apellidos or '' }}</h2>
+    <p><strong>Fecha:</strong> {{ ruta.fecha }}</p>
+    <p><strong>Horario:</strong> {{ ruta.hora_inicio_jornada or '-' }} - {{ ruta.hora_fin_jornada or '-' }}</p>
+    <p><strong>Total horas:</strong> {{ ruta.total_horas or '-' }}</p>
+    <p><strong>Observaciones:</strong> {{ ruta.observaciones_generales or '-' }}</p>
+  </div>
+
+  <div class="jornada-card">
+    <h2 style="margin-top:0;">Añadir tarea/parada</h2>
+
+    <form method="post" action="/crear-linea-ruta/{{ ruta.id }}" class="jornada-form">
+      <div class="full">
+        <label>Zona / tarea</label>
+        <input type="text" name="zona" class="input" placeholder="Ej. Limpieza portal 1" required>
+      </div>
+
+      <div>
+        <label>Hora inicio</label>
+        <input type="time" name="hora_inicio" class="input" required>
+      </div>
+
+      <div>
+        <label>Hora fin</label>
+        <input type="time" name="hora_fin" class="input" required>
+      </div>
+
+      <div>
+        <label>Duración minutos</label>
+        <input type="number" name="duracion_minutos" class="input" placeholder="15">
+      </div>
+
+      <div>
+        <label>Estado</label>
+        <select name="estado" class="input">
+          <option value="pendiente">Pendiente</option>
+          <option value="en_proceso">En proceso</option>
+          <option value="completada">Completada</option>
+        </select>
+      </div>
+
+      <div class="full">
+        <label>Observaciones</label>
+        <textarea name="observaciones" class="input" style="min-height:90px;"></textarea>
+      </div>
+
+      <div class="full">
+        <button type="submit" class="btn" style="width:auto; min-width:190px;">Añadir a jornada</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="jornada-card">
+    <h2 style="margin-top:0;">Tareas/paradas de la jornada</h2>
+
+    {% if detalles %}
+    <div class="jornada-table-wrap">
+      <table class="jornada-table">
+        <thead>
+          <tr>
+            <th>Zona / tarea</th>
+            <th>Inicio</th>
+            <th>Fin</th>
+            <th>Minutos</th>
+            <th>Estado</th>
+            <th>Observaciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in detalles %}
+          <tr>
+            <td>{{ d.zona or '-' }}</td>
+            <td>{{ d.hora_inicio or '-' }}</td>
+            <td>{{ d.hora_fin or '-' }}</td>
+            <td>{{ d.duracion_minutos or '-' }}</td>
+            <td>{{ d.estado or '-' }}</td>
+            <td>{{ d.observaciones or '-' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p>Todavía no hay tareas/paradas dentro de esta jornada.</p>
+    {% endif %}
+  </div>
+
+</div>
+
 {% endblock %}

@@ -1,0 +1,165 @@
+ï»¿{% extends 'base.html' %}
+{% block title %}Soporte / Tickets{% endblock %}
+
+{% block content %}
+
+<div class="top-actions">
+  <div>
+    <h1 class="page-title">Soporte / Tickets</h1>
+    <p class="page-subtitle">Crea incidencias o peticiones sobre la aplicación.</p>
+  </div>
+
+  <div style="display:flex; gap:12px;">
+    <a href="/dashboard" class="btn-inline secondary">Volver</a>
+    <a href="/logout" class="btn-inline secondary">Salir</a>
+  </div>
+</div>
+
+{% if success %}
+<div style="background:#064e1f; border:1px solid #15803d; color:white; padding:14px; border-radius:12px; margin-bottom:20px;">
+  {{ success }}
+</div>
+{% endif %}
+
+{% if error %}
+<div style="background:#5f1010; border:1px solid #dc2626; color:white; padding:14px; border-radius:12px; margin-bottom:20px;">
+  {{ error }}
+</div>
+{% endif %}
+
+<div class="card" style="padding:26px;">
+
+  <h2 style="margin-top:0;">Nuevo ticket</h2>
+
+  <form method="post" action="/tickets/nuevo"
+        style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:18px;">
+
+    <div>
+      <label>Nombre</label>
+      <input type="text" name="nombre_usuario" class="input"
+             value="{{ username or '' }}" required>
+    </div>
+
+    <div>
+      <label>Email</label>
+      <input type="email" name="email_usuario" class="input"
+             value="{{ email_usuario or '' }}" required>
+    </div>
+
+    <div>
+      <label>Tipo</label>
+      <select name="tipo" class="input">
+        <option value="peticion">Petición</option>
+        <option value="incidencia">Incidencia</option>
+        <option value="mejora">Mejora</option>
+        <option value="error">Error</option>
+        <option value="soporte">Soporte</option>
+      </select>
+    </div>
+
+    <div>
+      <label>Prioridad</label>
+      <select name="prioridad" class="input">
+        <option value="baja">Baja</option>
+        <option value="media" selected>Media</option>
+        <option value="alta">Alta</option>
+        <option value="urgente">Urgente</option>
+      </select>
+    </div>
+
+    <div style="grid-column:1/-1;">
+      <label>Título</label>
+      <input type="text" name="titulo" class="input" required>
+    </div>
+
+    <div style="grid-column:1/-1;">
+      <label>Descripción</label>
+      <textarea name="descripcion"
+                class="input"
+                style="min-height:150px; resize:vertical;"
+                required></textarea>
+    </div>
+
+    <div style="grid-column:1/-1;">
+      <button type="submit" class="btn"
+              style="width:auto; min-width:180px;">
+        Crear ticket
+      </button>
+    </div>
+
+  </form>
+</div>
+
+<div class="card" style="padding:26px; margin-top:24px;">
+
+  <h2 style="margin-top:0;">Listado de tickets</h2>
+
+  <div style="overflow-x:auto;">
+    <table style="width:100%; border-collapse:collapse; min-width:1100px;">
+
+      <thead>
+        <tr style="background:#141414;">
+          <th style="padding:14px; text-align:left;">ID</th>
+          <th style="padding:14px; text-align:left;">Usuario</th>
+          <th style="padding:14px; text-align:left;">Email</th>
+          <th style="padding:14px; text-align:left;">Título</th>
+          <th style="padding:14px; text-align:left;">Descripción</th>
+          <th style="padding:14px; text-align:left;">Tipo</th>
+          <th style="padding:14px; text-align:left;">Prioridad</th>
+          <th style="padding:14px; text-align:left;">Estado</th>
+          <th style="padding:14px; text-align:left;">Fecha</th>
+        </tr>
+      </thead>
+
+      <tbody>
+
+        {% for t in tickets %}
+        <tr>
+
+          <td style="padding:14px; border-bottom:1px solid #242424;">
+            {{ t.id }}
+          </td>
+
+          <td style="padding:14px; border-bottom:1px solid #242424;">
+            {{ t.nombre_usuario }}
+          </td>
+
+          <td style="padding:14px; border-bottom:1px solid #242424;">
+            {{ t.email_usuario }}
+          </td>
+
+          <td style="padding:14px; border-bottom:1px solid #242424;">
+            {{ t.titulo }}
+          </td>
+
+          <td style="padding:14px; border-bottom:1px solid #242424;">
+            {{ t.descripcion }}
+          </td>
+
+          <td style="padding:14px; border-bottom:1px solid #242424;">
+            {{ t.tipo }}
+          </td>
+
+          <td style="padding:14px; border-bottom:1px solid #242424;">
+            {{ t.prioridad }}
+          </td>
+
+          <td style="padding:14px; border-bottom:1px solid #242424;">
+            {{ t.estado }}
+          </td>
+
+          <td style="padding:14px; border-bottom:1px solid #242424;">
+            {{ t.fecha_creacion }}
+          </td>
+
+        </tr>
+        {% endfor %}
+
+      </tbody>
+
+    </table>
+  </div>
+
+</div>
+
+{% endblock %}

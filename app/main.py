@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+﻿from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from html import *
 from io import *
@@ -71,7 +71,7 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
             <body>
                 <div class="box">
                     <h1>Demasiadas peticiones</h1>
-                    <p>Has superado el límite permitido temporalmente. Espera un momento e inténtalo otra vez.</p>
+                    <p>Has superado el lÃ­mite permitido temporalmente. Espera un momento e intÃ©ntalo otra vez.</p>
                 </div>
             </body>
             </html>
@@ -81,7 +81,7 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
 
     return JSONResponse(
         status_code=429,
-        content={"detail": "Demasiadas peticiones. Inténtalo más tarde."}
+        content={"detail": "Demasiadas peticiones. IntÃ©ntalo mÃ¡s tarde."}
     )
 
 
@@ -132,18 +132,18 @@ def send_reset_email(to_email: str, reset_token: str) -> bool:
     from_email = os.getenv("SMTP_FROM") or smtp_user
 
     if not all([smtp_host, smtp_port, smtp_user, smtp_password, from_email]):
-        print("[CORREO] Variables SMTP incompletas. No se envió el correo.")
+        print("[CORREO] Variables SMTP incompletas. No se enviÃ³ el correo.")
         return False
 
     msg = MIMEText(
-        f"Has solicitado restablecer tu contraseña.\n\n"
-        f"Tu token de recuperación es:\n{reset_token}\n\n"
+        f"Has solicitado restablecer tu contraseÃ±a.\n\n"
+        f"Tu token de recuperaciÃ³n es:\n{reset_token}\n\n"
         f"Este token caduca en 10 minutos y solo puede usarse una vez.\n"
         f"Si no solicitaste este cambio, ignora este correo.",
         "plain",
         "utf-8",
     )
-    msg["Subject"] = "Recuperación de contraseña - AppEmpleados"
+    msg["Subject"] = "RecuperaciÃ³n de contraseÃ±a - AppEmpleados"
     msg["From"] = from_email
     msg["To"] = to_email
 
@@ -176,7 +176,7 @@ def send_ticket_email(ticket: dict) -> bool:
     )
 
     if not all([smtp_host, smtp_port, smtp_user, smtp_password, from_email, support_to]):
-        print("[TICKET CORREO] Variables SMTP incompletas. No se envió el aviso.")
+        print("[TICKET CORREO] Variables SMTP incompletas. No se enviÃ³ el aviso.")
         return False
 
     body = (
@@ -184,8 +184,8 @@ def send_ticket_email(ticket: dict) -> bool:
         f"ID: {ticket.get('id')}\n"
         f"Usuario: {ticket.get('nombre_usuario')}\n"
         f"Email: {ticket.get('email_usuario')}\n"
-        f"Título: {ticket.get('titulo')}\n"
-        f"Descripción: {ticket.get('descripcion')}\n"
+        f"TÃ­tulo: {ticket.get('titulo')}\n"
+        f"DescripciÃ³n: {ticket.get('descripcion')}\n"
         f"Tipo: {ticket.get('tipo')}\n"
         f"Prioridad: {ticket.get('prioridad')}\n"
         f"Estado: {ticket.get('estado')}\n"
@@ -322,7 +322,7 @@ def login(request: Request, username: str = Form(...), password: str = Form(...)
     ip = get_client_ip(request)
 
     if not username or not password:
-        return render_template(request, "login.html", {"error": "Usuario o contraseña incorrectos"}, 401)
+        return render_template(request, "login.html", {"error": "Usuario o contraseÃ±a incorrectos"}, 401)
 
     try:
         with engine.begin() as conn:
@@ -407,11 +407,11 @@ def login(request: Request, username: str = Form(...), password: str = Form(...)
                     {"u": username, "t": now},
                 )
 
-        return render_template(request, "login.html", {"error": "Usuario o contraseña incorrectos"}, 401)
+        return render_template(request, "login.html", {"error": "Usuario o contraseÃ±a incorrectos"}, 401)
 
     except Exception as e:
         print(f"[LOGIN ERROR] {e}")
-        return render_template(request, "login.html", {"error": "Error interno al iniciar sesión"}, 500)
+        return render_template(request, "login.html", {"error": "Error interno al iniciar sesiÃ³n"}, 500)
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
@@ -838,7 +838,9 @@ def nueva_incidencia_page(request: Request):
                 FROM trabajadores
                 WHERE empresa_id = :empresa_id
                 ORDER BY nombre, apellidos
-            """)).mappings().all()
+            """),
+            {"empresa_id": get_empresa_id(request)}
+        ).mappings().all()
 
     return render_template(request, "incidencia_nueva.html", {
         "username": username,
@@ -999,7 +1001,7 @@ def ver_tickets(request: Request, ok: str = "", error: str = ""):
             <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:24px;">
                 <div>
                     <h1 style="margin:0 0 6px 0;">Soporte / Tickets</h1>
-                    <p style="margin:0;color:#bdbdbd;">Crea incidencias o peticiones sobre la aplicación.</p>
+                    <p style="margin:0;color:#bdbdbd;">Crea incidencias o peticiones sobre la aplicaciÃ³n.</p>
                 </div>
                 <div style="display:flex;gap:10px;flex-wrap:wrap;">
                     <a href="/dashboard" style="text-decoration:none;padding:10px 16px;background:#1f1f1f;color:#fff;border:1px solid #333;border-radius:10px;">Volver</a>
@@ -1027,7 +1029,7 @@ def ver_tickets(request: Request, ok: str = "", error: str = ""):
                         <label style="display:block;margin-bottom:6px;">Tipo</label>
                         <select name="tipo"
                                 style="width:100%;padding:12px;border-radius:10px;border:1px solid #333;background:#101010;color:#fff;">
-                            <option value="peticion">Petición</option>
+                            <option value="peticion">PeticiÃ³n</option>
                             <option value="incidencia">Incidencia</option>
                             <option value="mejora">Mejora</option>
                             <option value="error">Error</option>
@@ -1045,12 +1047,12 @@ def ver_tickets(request: Request, ok: str = "", error: str = ""):
                         </select>
                     </div>
                     <div style="grid-column:1/-1;">
-                        <label style="display:block;margin-bottom:6px;">Título</label>
+                        <label style="display:block;margin-bottom:6px;">TÃ­tulo</label>
                         <input name="titulo" required
                                style="width:100%;padding:12px;border-radius:10px;border:1px solid #333;background:#101010;color:#fff;">
                     </div>
                     <div style="grid-column:1/-1;">
-                        <label style="display:block;margin-bottom:6px;">Descripción</label>
+                        <label style="display:block;margin-bottom:6px;">DescripciÃ³n</label>
                         <textarea name="descripcion" rows="6" required
                                   style="width:100%;padding:12px;border-radius:10px;border:1px solid #333;background:#101010;color:#fff;resize:vertical;"></textarea>
                     </div>
@@ -1072,8 +1074,8 @@ def ver_tickets(request: Request, ok: str = "", error: str = ""):
                                 <th style="padding:10px;text-align:left;border-bottom:1px solid #333;">ID</th>
                                 <th style="padding:10px;text-align:left;border-bottom:1px solid #333;">Usuario</th>
                                 <th style="padding:10px;text-align:left;border-bottom:1px solid #333;">Email</th>
-                                <th style="padding:10px;text-align:left;border-bottom:1px solid #333;">Título</th>
-                                <th style="padding:10px;text-align:left;border-bottom:1px solid #333;">Descripción</th>
+                                <th style="padding:10px;text-align:left;border-bottom:1px solid #333;">TÃ­tulo</th>
+                                <th style="padding:10px;text-align:left;border-bottom:1px solid #333;">DescripciÃ³n</th>
                                 <th style="padding:10px;text-align:left;border-bottom:1px solid #333;">Tipo</th>
                                 <th style="padding:10px;text-align:left;border-bottom:1px solid #333;">Prioridad</th>
                                 <th style="padding:10px;text-align:left;border-bottom:1px solid #333;">Estado</th>
@@ -1236,7 +1238,9 @@ def nueva_tarea_page(request: Request):
                 FROM trabajadores
                 WHERE empresa_id = :empresa_id
                 ORDER BY nombre, apellidos
-            """)).mappings().all()
+            """),
+            {"empresa_id": get_empresa_id(request)}
+        ).mappings().all()
 
     return render_template(request, "tarea_nueva.html", {
         "username": username,
@@ -1300,9 +1304,11 @@ def guardar_tarea(
                 text("""
                     SELECT id, nombre, apellidos
                     FROM trabajadores
-                    WHERE empresa_id = :empresa_id
-                    ORDER BY nombre, apellidos
-                """)).mappings().all()
+                WHERE empresa_id = :empresa_id
+                ORDER BY nombre, apellidos
+            """),
+            {"empresa_id": get_empresa_id(request)}
+        ).mappings().all()
 
         return render_template(request, "tarea_nueva.html", {
             "username": username,
@@ -1369,7 +1375,9 @@ def editar_tarea_page(request: Request, id: int):
                 FROM trabajadores
                 WHERE empresa_id = :empresa_id
                 ORDER BY nombre, apellidos
-            """)).mappings().all()
+            """),
+            {"empresa_id": get_empresa_id(request)}
+        ).mappings().all()
 
     return render_template(request, "tarea_editar.html", {
         "username": username,
@@ -1502,7 +1510,7 @@ def guardar_usuario(
             return render_template(request, "usuario_nuevo.html", {
                 "username": username,
                 "rol": rol_actual,
-                "error": "La contraseña debe tener al menos 8 caracteres",
+                "error": "La contraseÃ±a debe tener al menos 8 caracteres",
                 "msg": "",
                 "active_page": "usuarios",
             }, 400)
@@ -1700,718 +1708,47 @@ def exportar_rutas_excel(request: Request):
     username, rol, response = require_login(request)
     if response:
         return response
-
     empresa_id = get_current_empresa_id(request)
-
     with engine.begin() as conn:
-        rutas = conn.execute(text("""
-            SELECT r.id, r.fecha, r.hora_inicio_jornada, r.hora_fin_jornada,
-                   r.total_horas, r.observaciones_generales,
-                   t.nombre, t.apellidos
-            FROM rutas r
-            LEFT JOIN trabajadores t
-                ON t.id = r.trabajador_id
-                AND t.empresa_id = r.empresa_id
-            WHERE r.empresa_id = :empresa_id
-            ORDER BY r.fecha DESC, r.hora_inicio_jornada ASC, r.id DESC
-        """)).mappings().all()
-
+        filas = conn.execute(text('SELECT r.id AS ruta_id, r.fecha, r.hora_inicio_jornada, r.hora_fin_jornada, r.total_horas, r.observaciones_generales, t.nombre, t.apellidos, d.zona, d.hora_inicio, d.hora_fin, d.duracion_minutos, d.estado, d.observaciones FROM rutas r LEFT JOIN trabajadores t ON t.id = r.trabajador_id AND t.empresa_id = r.empresa_id LEFT JOIN rutas_detalle d ON d.ruta_id = r.id WHERE r.empresa_id = :empresa_id ORDER BY r.fecha DESC, r.id DESC, d.hora_inicio ASC'), {'empresa_id': empresa_id}).mappings().all()
     wb = Workbook()
     ws = wb.active
-    ws.title = "Rutas"
-
-    rojo = PatternFill("solid", fgColor="C00000")
-    negro = PatternFill("solid", fgColor="111111")
-    gris = PatternFill("solid", fgColor="F2F2F2")
-    blanca = Font(color="FFFFFF", bold=True)
-    negra = Font(color="000000", bold=True)
-    titulo = Font(size=16, bold=True)
-    borde = Border(left=Side(style="thin", color="000000"), right=Side(style="thin", color="000000"), top=Side(style="thin", color="000000"), bottom=Side(style="thin", color="000000"))
-    centrado = Alignment(horizontal="center", vertical="center")
-    izquierda = Alignment(horizontal="left", vertical="center", wrap_text=True)
-
-    ws.merge_cells("A1:G1")
-    ws["A1"] = "LISTADO DE RUTAS / JORNADAS"
-    ws["A1"].font = titulo
-    ws["A1"].alignment = centrado
-
-    ws["A3"] = "Total rutas"
-    ws["B3"] = len(rutas)
-
-    ws["A3"].fill = negro
-    ws["A3"].font = blanca
-    ws["A3"].border = borde
-    ws["A3"].alignment = izquierda
-
-    ws["B3"].fill = gris
-    ws["B3"].font = negra
-    ws["B3"].border = borde
-    ws["B3"].alignment = izquierda
-
-    encabezados = ["ID", "Empleado", "Fecha", "Inicio", "Fin", "Horas", "Observaciones"]
-    fila = 5
-
-    for i, e in enumerate(encabezados, start=1):
-        c = ws.cell(row=fila, column=i, value=e)
-        c.fill = rojo
-        c.font = blanca
-        c.border = borde
-        c.alignment = centrado
-
-    fila += 1
-
-    for r in rutas:
-        empleado = f"{r['nombre'] or ''} {r['apellidos'] or ''}".strip()
-        valores = [
-            r["id"],
-            empleado,
-            str(r["fecha"] or ""),
-            str(r["hora_inicio_jornada"] or ""),
-            str(r["hora_fin_jornada"] or ""),
-            r["total_horas"] if r["total_horas"] is not None else "",
-            r["observaciones_generales"] or "",
-        ]
-
-        for col, val in enumerate(valores, start=1):
-            c = ws.cell(row=fila, column=col, value=val)
-            c.border = borde
-            c.alignment = centrado if col in (1, 3, 4, 5, 6) else izquierda
-
-        fila += 1
-
-    ws.column_dimensions["A"].width = 10
-    ws.column_dimensions["B"].width = 28
-    ws.column_dimensions["C"].width = 16
-    ws.column_dimensions["D"].width = 14
-    ws.column_dimensions["E"].width = 14
-    ws.column_dimensions["F"].width = 12
-    ws.column_dimensions["G"].width = 40
-
-    bio = BytesIO()
+    ws.title = 'Rutas'
+    rojo = PatternFill('solid', fgColor='C00000')
+    negro = PatternFill('solid', fgColor='111111')
+    gris = PatternFill('solid', fgColor='F2F2F2')
+    blanca = Font(color='FFFFFF', bold=True)
+    titulo = Font(size=18, bold=True)
+    borde = Border(left=Side(style='thin', color='000000'), right=Side(style='thin', color='000000'), top=Side(style='thin', color='000000'), bottom=Side(style='thin', color='000000'))
+    centrado = Alignment(horizontal='center', vertical='center')
+    izquierda = Alignment(horizontal='left', vertical='center', wrap_text=True)
+    ws.merge_cells('A1:K1')
+    ws['A1']='PLANIFICACIÃ“N DE RUTAS / JORNADAS'
+    ws['A1'].font=titulo
+    ws['A1'].alignment=centrado
+    ws['A3']='Total tareas'
+    ws['B3']=len(filas)
+    ws['A3'].fill=negro
+    ws['A3'].font=blanca
+    ws['A3'].alignment=centrado
+    ws['B3'].fill=gris
+    headers=['Ruta','Empleado','Fecha','Inicio jornada','Fin jornada','Horas','Zona/Tarea','Inicio tarea','Fin tarea','Estado','Observaciones']
+    for col,h in enumerate(headers,start=1):
+        cell=ws.cell(row=5,column=col,value=h); cell.fill=rojo; cell.font=blanca; cell.border=borde; cell.alignment=centrado
+    fila=6
+    for x in filas:
+        empleado=((x['nombre'] or '')+' '+(x['apellidos'] or '')).strip()
+        valores=[x['ruta_id'],empleado,str(x['fecha'] or ''),str(x['hora_inicio_jornada'] or ''),str(x['hora_fin_jornada'] or ''),x['total_horas'] or '',x['zona'] or '',str(x['hora_inicio'] or ''),str(x['hora_fin'] or ''),x['estado'] or '',x['observaciones'] or '']
+        for col,val in enumerate(valores,start=1):
+            cell=ws.cell(row=fila,column=col,value=val); cell.border=borde; cell.alignment=izquierda if col in (2,7,11) else centrado
+        fila+=1
+    ws.freeze_panes='A6'
+    ws.auto_filter.ref='A5:K'+str(max(fila-1,5))
+    for letra,ancho in {'A':10,'B':28,'C':14,'D':18,'E':18,'F':10,'G':32,'H':16,'I':16,'J':16,'K':45}.items(): ws.column_dimensions[letra].width=ancho
+    bio=BytesIO()
     wb.save(bio)
     bio.seek(0)
-
-    return StreamingResponse(
-        bio,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": "attachment; filename=rutas.xlsx"},
-    )
-
-
-@app.post("/rutas/nueva")
-def crear_ruta_web(
-    request: Request,
-    trabajador_id: str = Form(...),
-    fecha: str = Form(...),
-    inicio_jornada: str = Form(...),
-    fin_jornada: str = Form(...),
-    total_horas: str = Form("8.00"),
-    observaciones: str = Form(""),
-):
-    username, rol, response = require_admin(request)
-    if response:
-        return response
-
-    empresa_id = get_current_empresa_id(request)
-
-    try:
-        with engine.begin() as conn:
-            conn.execute(text("""
-                INSERT INTO rutas (
-                    empresa_id, trabajador_id, fecha, hora_inicio_jornada,
-                    hora_fin_jornada, total_horas, observaciones_generales
-                )
-                VALUES (
-                    :empresa_id, :trabajador_id, :fecha, :inicio,
-                    :fin, :total_horas, :observaciones
-                )
-            """), {
-                "empresa_id": empresa_id,
-                "trabajador_id": int(trabajador_id),
-                "fecha": fecha,
-                "inicio": inicio_jornada,
-                "fin": fin_jornada,
-                "total_horas": float(total_horas),
-                "observaciones": observaciones.strip() or None,
-            })
-
-        return RedirectResponse(url="/rutas", status_code=303)
-
-    except Exception as e:
-        print(f"[RUTAS NUEVA ERROR] {e}")
-        return RedirectResponse(url="/rutas", status_code=303)
-
-
-@app.get("/rutas/{id}", response_class=HTMLResponse)
-def detalle_ruta(request: Request, id: int):
-    username, rol, response = require_login(request)
-    if response:
-        return response
-
-    empresa_id = get_current_empresa_id(request)
-
-    with engine.begin() as conn:
-        ruta = conn.execute(text("""
-            SELECT r.id, r.trabajador_id,
-                   t.nombre AS trabajador_nombre,
-                   t.apellidos AS trabajador_apellidos,
-                   r.fecha, r.hora_inicio_jornada, r.hora_fin_jornada,
-                   r.total_horas, r.observaciones_generales
-            FROM rutas r
-            INNER JOIN trabajadores t
-                ON r.trabajador_id = t.id
-                AND t.empresa_id = r.empresa_id
-            WHERE r.id = :id
-            AND r.empresa_id = :empresa_id
-        """), {"id": id, "empresa_id": empresa_id}).mappings().first()
-
-        if not ruta:
-            return RedirectResponse(url="/rutas", status_code=303)
-
-        lineas = conn.execute(text("""
-            SELECT id, ruta_id, zona, hora_inicio, hora_fin,
-                   duracion_minutos, estado, observaciones
-            FROM rutas_detalle
-            WHERE ruta_id = :id
-            AND empresa_id = :empresa_id
-            ORDER BY hora_inicio ASC
-        """), {"id": id, "empresa_id": empresa_id}).mappings().all()
-
-    return render_template(request, "ruta_detalle.html", {
-        "username": username,
-        "rol": rol,
-        "ruta": ruta,
-        "lineas": lineas,
-        "active_page": "rutas",
-    })
-
-
-@app.post("/rutas/{id}/lineas/nueva")
-def crear_ruta_linea_web(
-    request: Request,
-    id: int,
-    hora_inicio: str = Form(...),
-    hora_fin: str = Form(...),
-    tarea: str = Form(...),
-):
-    username, rol, response = require_admin(request)
-    if response:
-        return response
-
-    empresa_id = get_current_empresa_id(request)
-
-    try:
-        with engine.begin() as conn:
-            conn.execute(text("""
-                INSERT INTO rutas_detalle (
-                    empresa_id, ruta_id, zona, hora_inicio, hora_fin,
-                    duracion_minutos, estado, observaciones
-                )
-                VALUES (
-                    :empresa_id, :ruta_id, :zona, :hora_inicio, :hora_fin,
-                    0, 'pendiente', NULL
-                )
-            """), {
-                "empresa_id": empresa_id,
-                "ruta_id": id,
-                "zona": tarea.strip(),
-                "hora_inicio": hora_inicio,
-                "hora_fin": hora_fin,
-            })
-
-        return RedirectResponse(url=f"/rutas/{id}", status_code=303)
-
-    except Exception as e:
-        print(f"[RUTAS LINEA ERROR] {e}")
-        return RedirectResponse(url=f"/rutas/{id}", status_code=303)
-
-
-@app.get("/rutas/{id}/lineas/eliminar/{linea_id}")
-def eliminar_ruta_linea_web(request: Request, id: int, linea_id: int):
-    username, rol, response = require_admin(request)
-    if response:
-        return response
-
-    empresa_id = get_current_empresa_id(request)
-
-    with engine.begin() as conn:
-        conn.execute(text("""
-            DELETE FROM rutas_detalle
-            WHERE id = :linea_id
-            AND ruta_id = :ruta_id
-            AND empresa_id = :empresa_id
-        """), {
-            "linea_id": linea_id,
-            "ruta_id": id,
-            "empresa_id": empresa_id,
-        })
-
-    return RedirectResponse(url=f"/rutas/{id}", status_code=303)
-
-
-@app.get("/rutas/eliminar/{id}")
-def eliminar_ruta_web(request: Request, id: int):
-    username, rol, response = require_admin(request)
-    if response:
-        return response
-
-    empresa_id = get_current_empresa_id(request)
-
-    with engine.begin() as conn:
-        conn.execute(text("""
-            DELETE FROM rutas_detalle
-            WHERE ruta_id = :id
-            AND empresa_id = :empresa_id
-        """), {"id": id, "empresa_id": empresa_id})
-
-        conn.execute(text("""
-            DELETE FROM rutas
-            WHERE id = :id
-            AND empresa_id = :empresa_id
-        """), {"id": id, "empresa_id": empresa_id})
-
-    return RedirectResponse(url="/rutas", status_code=303)
-
-
-@app.get("/horas", response_class=HTMLResponse)
-def ver_horas(request: Request):
-    username, rol, response = require_login(request)
-    if response:
-        return response
-
-    empresa_id = get_current_empresa_id(request)
-
-    with engine.begin() as conn:
-        horas = conn.execute(text("""SELECT h.id, t.nombre, t.apellidos, h.fecha, h.horas, h.horas_extra, h.tipo FROM horas_trabajadas h JOIN trabajadores t ON h.trabajador_id = t.id AND t.empresa_id = h.empresa_id WHERE h.empresa_id = :empresa_id ORDER BY h.fecha DESC, h.id DESC"""), {"empresa_id": empresa_id}).mappings().all()
-
-        trabajadores = conn.execute(text("""SELECT id, nombre, apellidos FROM trabajadores WHERE empresa_id = :empresa_id ORDER BY nombre, apellidos"""), {"empresa_id": empresa_id}).mappings().all()
-
-    return render_template(request, "horas.html", {
-        "username": username,
-        "rol": rol,
-        "horas": horas,
-        "trabajadores": trabajadores,
-        "active_page": "horas",
-    })
-
-
-@app.post("/horas/nueva")
-def crear_horas_web(
-    request: Request,
-    trabajador_id: str = Form(...),
-    fecha: str = Form(...),
-    horas: str = Form(...),
-    horas_extra: str = Form("0"),
-    tipo: str = Form("normal"),
-):
-    username, rol, response = require_admin(request)
-    if response:
-        return response
-
-    empresa_id = get_current_empresa_id(request)
-
-    try:
-        with engine.begin() as conn:
-            conn.execute(text("""
-                INSERT INTO horas_trabajadas
-                (empresa_id, trabajador_id, fecha, horas, horas_extra, tipo)
-                VALUES (:empresa_id, :trabajador_id, :fecha, :horas, :horas_extra, :tipo)
-            """), {
-                "empresa_id": empresa_id,
-                "trabajador_id": int(trabajador_id),
-                "fecha": fecha,
-                "horas": float(horas),
-                "horas_extra": float(horas_extra or 0),
-                "tipo": tipo.strip() or "normal",
-            })
-
-        return RedirectResponse(url="/horas", status_code=303)
-
-    except Exception as e:
-        print(f"[HORAS NUEVA ERROR] {e}")
-        return RedirectResponse(url="/horas", status_code=303)
-
-
-@app.get("/horas/eliminar/{id}")
-def eliminar_horas_web(request: Request, id: int):
-    username, rol, response = require_admin(request)
-    if response:
-        return response
-
-    empresa_id = get_current_empresa_id(request)
-
-    with engine.begin() as conn:
-        conn.execute(text("""
-            DELETE FROM horas_trabajadas
-            WHERE id = :id
-            AND empresa_id = :empresa_id
-        """), {"id": id, "empresa_id": empresa_id})
-
-    return RedirectResponse(url="/horas", status_code=303)
-
-
-@app.get("/ausencias", response_class=HTMLResponse)
-def ver_ausencias(request: Request):
-    username, rol, response = require_login(request)
-    if response:
-        return response
-
-    empresa_id = get_current_empresa_id(request)
-
-    with engine.begin() as conn:
-        ausencias = conn.execute(text("""SELECT a.id, t.nombre, t.apellidos, a.tipo, a.fecha_inicio, a.fecha_fin, a.motivo, a.estado FROM ausencias a JOIN trabajadores t ON a.trabajador_id = t.id AND t.empresa_id = a.empresa_id WHERE a.empresa_id = :empresa_id ORDER BY a.fecha_inicio DESC, a.id DESC"""), {"empresa_id": empresa_id}).mappings().all()
-
-        trabajadores = conn.execute(text("""SELECT id, nombre, apellidos FROM trabajadores WHERE empresa_id = :empresa_id ORDER BY nombre, apellidos"""), {"empresa_id": empresa_id}).mappings().all()
-
-    return render_template(request, "ausencias.html", {
-        "username": username,
-        "rol": rol,
-        "ausencias": ausencias,
-        "trabajadores": trabajadores,
-        "active_page": "ausencias",
-    })
-
-
-@app.post("/ausencias/nueva")
-def crear_ausencia_web(
-    request: Request,
-    trabajador_id: str = Form(...),
-    tipo: str = Form(...),
-    fecha_inicio: str = Form(...),
-    fecha_fin: str = Form(...),
-    motivo: str = Form(""),
-    estado: str = Form("pendiente"),
-):
-    username, rol, response = require_admin(request)
-    if response:
-        return response
-
-    empresa_id = get_current_empresa_id(request)
-
-    try:
-        with engine.begin() as conn:
-            conn.execute(text("""
-                INSERT INTO ausencias
-                (empresa_id, trabajador_id, tipo, fecha_inicio, fecha_fin, motivo, estado)
-                VALUES (:empresa_id, :trabajador_id, :tipo, :fecha_inicio, :fecha_fin, :motivo, :estado)
-            """), {
-                "empresa_id": empresa_id,
-                "trabajador_id": int(trabajador_id),
-                "tipo": tipo.strip(),
-                "fecha_inicio": fecha_inicio,
-                "fecha_fin": fecha_fin,
-                "motivo": motivo.strip() or None,
-                "estado": estado.strip() or "pendiente",
-            })
-
-        return RedirectResponse(url="/ausencias", status_code=303)
-
-    except Exception as e:
-        print(f"[AUSENCIAS NUEVA ERROR] {e}")
-        return RedirectResponse(url="/ausencias", status_code=303)
-
-
-@app.get("/ausencias/eliminar/{id}")
-def eliminar_ausencia_web(request: Request, id: int):
-    username, rol, response = require_admin(request)
-    if response:
-        return response
-
-    empresa_id = get_current_empresa_id(request)
-
-    with engine.begin() as conn:
-        conn.execute(text("""
-            DELETE FROM ausencias
-            WHERE id = :id
-            AND empresa_id = :empresa_id
-        """), {"id": id, "empresa_id": empresa_id})
-
-    return RedirectResponse(url="/ausencias", status_code=303)
-
-
-@app.get("/productos", response_class=HTMLResponse)
-def ver_productos(request: Request):
-    username, rol, response = require_login(request)
-    if response:
-        return response
-
-    empresa_id = get_current_empresa_id(request)
-
-    with engine.begin() as conn:
-        productos = conn.execute(text("""SELECT id, nombre, categoria, stock FROM productos WHERE empresa_id = :empresa_id ORDER BY id DESC"""), {"empresa_id": empresa_id}).mappings().all()
-
-    return render_template(request, "productos.html", {
-        "username": username,
-        "rol": rol,
-        "productos": productos,
-        "active_page": "productos",
-    })
-
-
-@app.post("/productos/nuevo")
-def crear_producto_web(
-    request: Request,
-    nombre: str = Form(...),
-    categoria: str = Form(""),
-    stock: str = Form("0"),
-):
-    username, rol, response = require_admin(request)
-    if response:
-        return response
-
-    empresa_id = get_current_empresa_id(request)
-
-    try:
-        with engine.begin() as conn:
-            conn.execute(text("""
-                INSERT INTO productos (empresa_id, nombre, categoria, stock)
-                VALUES (:empresa_id, :nombre, :categoria, :stock)
-            """), {
-                "empresa_id": empresa_id,
-                "nombre": nombre.strip(),
-                "categoria": categoria.strip() or None,
-                "stock": int(stock or 0),
-            })
-
-        return RedirectResponse(url="/productos", status_code=303)
-
-    except Exception as e:
-        print(f"[PRODUCTOS NUEVO ERROR] {e}")
-        return RedirectResponse(url="/productos", status_code=303)
-
-
-@app.get("/productos/eliminar/{id}")
-def eliminar_producto_web(request: Request, id: int):
-    username, rol, response = require_admin(request)
-    if response:
-        return response
-
-    empresa_id = get_current_empresa_id(request)
-
-    with engine.begin() as conn:
-        conn.execute(text("""
-            DELETE FROM productos
-            WHERE id = :id
-            AND empresa_id = :empresa_id
-        """), {"id": id, "empresa_id": empresa_id})
-
-    return RedirectResponse(url="/productos", status_code=303)
-
-
-@app.get("/productos/restar/{id}")
-def restar_producto(request: Request, id: int):
-    username, rol, response = require_admin(request)
-    if response:
-        return response
-
-    empresa_id = get_current_empresa_id(request)
-
-    with engine.begin() as conn:
-        conn.execute(
-            text("""
-                UPDATE productos
-                SET stock = GREATEST(stock - 1, 0)
-                WHERE id = :id
-                AND empresa_id = :empresa_id
-            """),
-            {"id": id, "empresa_id": empresa_id},
-        )
-
-    return RedirectResponse(url="/productos", status_code=303)
-
-
-@app.get("/zonas", response_class=HTMLResponse)
-def ver_zonas(request: Request):
-    username, rol, response = require_login(request)
-    if response:
-        return response
-
-    empresa_id = get_current_empresa_id(request)
-
-    with engine.begin() as conn:
-        zonas = conn.execute(text("""SELECT id, nombre, tipo, activo FROM zonas WHERE empresa_id = :empresa_id ORDER BY nombre ASC, id DESC"""), {"empresa_id": empresa_id}).mappings().all()
-
-    return render_template(request, "zonas.html", {
-        "username": username,
-        "rol": rol,
-        "zonas": zonas,
-        "active_page": "zonas",
-    })
-
-
-@app.post("/zonas/nueva")
-def crear_zona_web(
-    request: Request,
-    nombre: str = Form(...),
-    tipo: str = Form(""),
-    activo: str = Form("true"),
-):
-    username, rol, response = require_admin(request)
-    if response:
-        return response
-
-    empresa_id = get_current_empresa_id(request)
-
-    try:
-        with engine.begin() as conn:
-            conn.execute(
-                text("""
-                    INSERT INTO zonas (empresa_id, nombre, tipo, activo)
-                    VALUES (:empresa_id, :nombre, :tipo, :activo)
-                """),
-                {
-                    "empresa_id": empresa_id,
-                    "nombre": nombre.strip(),
-                    "tipo": tipo.strip() or None,
-                    "activo": activo.lower() == "true",
-                },
-            )
-
-        return RedirectResponse(url="/zonas", status_code=303)
-
-    except Exception as e:
-        print(f"[ZONAS NUEVA ERROR] {e}")
-        return RedirectResponse(url="/zonas", status_code=303)
-
-
-@app.get("/zonas/toggle/{id}")
-def toggle_zona_web(request: Request, id: int):
-    username, rol, response = require_admin(request)
-    if response:
-        return response
-
-    empresa_id = get_current_empresa_id(request)
-
-    with engine.begin() as conn:
-        conn.execute(
-            text("""
-                UPDATE zonas
-                SET activo = NOT activo
-                WHERE id = :id
-                AND empresa_id = :empresa_id
-            """),
-            {"id": id, "empresa_id": empresa_id},
-        )
-
-    return RedirectResponse(url="/zonas", status_code=303)
-
-
-@app.get("/zonas/eliminar/{id}")
-def eliminar_zona_web(request: Request, id: int):
-    username, rol, response = require_admin(request)
-    if response:
-        return response
-
-    empresa_id = get_current_empresa_id(request)
-
-    with engine.begin() as conn:
-        conn.execute(
-            text("""
-                DELETE FROM zonas
-                WHERE id = :id
-                AND empresa_id = :empresa_id
-            """),
-            {"id": id, "empresa_id": empresa_id},
-        )
-
-    return RedirectResponse(url="/zonas", status_code=303)
-
-
-@app.get("/productos/exportar")
-def exportar_productos_excel(request: Request):
-    username, rol, response = require_login(request)
-    if response:
-        return response
-
-    empresa_id = get_current_empresa_id(request)
-
-    with engine.begin() as conn:
-        productos = conn.execute(
-            text("""
-                SELECT id, nombre, categoria, stock
-                FROM productos
-                WHERE empresa_id = :empresa_id
-                ORDER BY id DESC""")).mappings().all()
-
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Productos"
-
-    rojo = PatternFill("solid", fgColor="C00000")
-    negro = PatternFill("solid", fgColor="111111")
-    gris = PatternFill("solid", fgColor="F2F2F2")
-    blanca = Font(color="FFFFFF", bold=True)
-    negra = Font(color="000000", bold=True)
-    titulo = Font(size=16, bold=True)
-    borde = Border(
-        left=Side(style="thin", color="000000"),
-        right=Side(style="thin", color="000000"),
-        top=Side(style="thin", color="000000"),
-        bottom=Side(style="thin", color="000000"),
-    )
-    centrado = Alignment(horizontal="center", vertical="center")
-    izquierda = Alignment(horizontal="left", vertical="center")
-
-    ws.merge_cells("A1:D1")
-    ws["A1"] = "LISTADO DE PRODUCTOS"
-    ws["A1"].font = titulo
-    ws["A1"].alignment = centrado
-
-    ws["A3"] = "Total productos"
-    ws["B3"] = len(productos)
-
-    ws["A3"].fill = negro
-    ws["A3"].font = blanca
-    ws["A3"].border = borde
-    ws["A3"].alignment = izquierda
-
-    ws["B3"].fill = gris
-    ws["B3"].font = negra
-    ws["B3"].border = borde
-    ws["B3"].alignment = izquierda
-
-    encabezados = ["ID", "Nombre", "Categoría", "Stock"]
-    fila = 5
-
-    for i, e in enumerate(encabezados, start=1):
-        c = ws.cell(row=fila, column=i, value=e)
-        c.fill = rojo
-        c.font = blanca
-        c.border = borde
-        c.alignment = centrado
-
-    fila += 1
-
-    for prod in productos:
-        valores = [
-            prod["id"],
-            prod["nombre"],
-            prod["categoria"] or "",
-            prod["stock"],
-        ]
-
-        for col, val in enumerate(valores, start=1):
-            c = ws.cell(row=fila, column=col, value=val)
-            c.border = borde
-            c.alignment = izquierda if col in (2, 3) else centrado
-
-        fila += 1
-
-    ws.column_dimensions["A"].width = 10
-    ws.column_dimensions["B"].width = 35
-    ws.column_dimensions["C"].width = 25
-    ws.column_dimensions["D"].width = 12
-
-    bio = BytesIO()
-    wb.save(bio)
-    bio.seek(0)
-
-    return StreamingResponse(
-        bio,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": "attachment; filename=productos.xlsx"},
-    )
-
+    return StreamingResponse(bio, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', headers={'Content-Disposition':'attachment; filename=rutas.xlsx'})
 
 @app.get("/tareas/exportar")
 def exportar_tareas_excel(request: Request):
@@ -2433,7 +1770,9 @@ def exportar_tareas_excel(request: Request):
                     AND tr.empresa_id = ta.empresa_id
                 WHERE ta.empresa_id = :empresa_id
                 ORDER BY ta.fecha_asignacion DESC, ta.id DESC
-            """)).mappings().all()
+            """),
+            {"empresa_id": get_empresa_id(request)}
+        ).mappings().all()
 
     wb = Workbook()
     ws = wb.active
@@ -2472,7 +1811,7 @@ def exportar_tareas_excel(request: Request):
     ws["B3"].border = borde
     ws["B3"].alignment = izquierda
 
-    encabezados = ["ID", "Título", "Descripción", "Trabajador", "Estado", "Prioridad", "Asignación", "Vencimiento"]
+    encabezados = ["ID", "TÃ­tulo", "DescripciÃ³n", "Trabajador", "Estado", "Prioridad", "AsignaciÃ³n", "Vencimiento"]
     fila = 5
 
     for i, e in enumerate(encabezados, start=1):
@@ -2648,7 +1987,7 @@ def forgot_password(request: Request, email: str = Form(...)):
         return render_template(
             request,
             "forgot_password.html",
-            {"msg": "Si el correo existe, se enviará un código.", "error": ""},
+            {"msg": "Si el correo existe, se enviarÃ¡ un cÃ³digo.", "error": ""},
         )
 
     except Exception as e:
@@ -2672,10 +2011,10 @@ def reset_password(
     code = (code or "").strip()
 
     if len(new_password) < 8:
-        return render_template(request, "reset_password.html", {"msg": "", "error": "La contraseña debe tener al menos 8 caracteres"}, 400)
+        return render_template(request, "reset_password.html", {"msg": "", "error": "La contraseÃ±a debe tener al menos 8 caracteres"}, 400)
 
     if not is_token_format_valid(code):
-        return render_template(request, "reset_password.html", {"msg": "", "error": "Código inválido"}, 400)
+        return render_template(request, "reset_password.html", {"msg": "", "error": "CÃ³digo invÃ¡lido"}, 400)
 
     token_hash = hash_reset_token(code)
 
@@ -2692,10 +2031,10 @@ def reset_password(
             """), {"e": email, "c": token_hash}).mappings().first()
 
             if not row:
-                return render_template(request, "reset_password.html", {"msg": "", "error": "Código inválido"}, 400)
+                return render_template(request, "reset_password.html", {"msg": "", "error": "CÃ³digo invÃ¡lido"}, 400)
 
             if is_expired(row["expires_at"]):
-                return render_template(request, "reset_password.html", {"msg": "", "error": "Código caducado"}, 400)
+                return render_template(request, "reset_password.html", {"msg": "", "error": "CÃ³digo caducado"}, 400)
 
             new_hash = pbkdf2_sha256.hash(new_password)
 
@@ -2709,14 +2048,542 @@ def reset_password(
                 {"id": row["id"]},
             )
 
-        return render_template(request, "reset_password.html", {"msg": "Contraseña cambiada correctamente", "error": ""})
+        return render_template(request, "reset_password.html", {"msg": "ContraseÃ±a cambiada correctamente", "error": ""})
 
     except Exception as e:
         print(f"[RESET PASSWORD ERROR] {e}")
-        return render_template(request, "reset_password.html", {"msg": "", "error": "Error al cambiar la contraseña"}, 500)
+        return render_template(request, "reset_password.html", {"msg": "", "error": "Error al cambiar la contraseÃ±a"}, 500)
 
 
 
 
 
 
+
+
+
+
+
+
+
+
+
+
+@app.get("/exportar-turnos-excel")
+def exportar_turnos_excel(request: Request):
+    from fastapi.responses import StreamingResponse
+    from openpyxl import Workbook
+    from io import BytesIO
+
+    username, rol, response = require_login(request)
+    if response:
+        return response
+
+    empresa_id = get_empresa_id(request)
+
+    with engine.connect() as conn:
+        turnos = conn.execute(text("""
+            SELECT tu.id, tu.trabajador_id, tr.nombre, tr.apellidos, tu.fecha, tu.inicio_jornada, tu.fin_jornada
+            FROM turnos tu
+            LEFT JOIN trabajadores tr
+                ON tr.id = tu.trabajador_id
+                AND tr.empresa_id = tu.empresa_id
+            WHERE tu.empresa_id = :empresa_id
+            ORDER BY tu.fecha DESC, tu.id DESC
+        """), {"empresa_id": empresa_id}).mappings().all()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Turnos"
+
+    ws.append(["ID", "Trabajador", "Fecha", "Inicio jornada", "Fin jornada"])
+
+    for t in turnos:
+        trabajador = f"{t.get('nombre') or ''} {t.get('apellidos') or ''}".strip()
+        ws.append([
+            t.get("id"),
+            trabajador,
+            str(t.get("fecha") or ""),
+            str(t.get("inicio_jornada") or ""),
+            str(t.get("fin_jornada") or "")
+        ])
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=turnos.xlsx"}
+    )
+
+
+@app.post("/turnos/nuevo")
+def crear_turno(request: Request, trabajador_id: int = Form(...), fecha: str = Form(...), inicio: str = Form(None), fin: str = Form(None), horas: float = Form(None), observaciones: str = Form(None)):
+    username, rol, response = require_login(request)
+    if response:
+        return response
+
+    empresa_id = get_empresa_id(request)
+
+    with engine.begin() as conn:
+        conn.execute(text("""
+            INSERT INTO turnos (
+                trabajador_id, fecha, inicio_jornada, fin_jornada,
+                total_horas, observaciones, empresa_id
+            )
+            VALUES (
+                :trabajador_id, :fecha, :inicio_jornada, :fin_jornada,
+                :total_horas, :observaciones, :empresa_id
+            )
+        """), {
+            "trabajador_id": trabajador_id,
+            "fecha": fecha,
+            "inicio_jornada": inicio,
+            "fin_jornada": fin,
+            "total_horas": horas,
+            "observaciones": observaciones,
+            "empresa_id": empresa_id
+        })
+
+    return RedirectResponse(url="/turnos", status_code=303)
+
+
+
+@app.get("/turnos/{id}", response_class=HTMLResponse)
+def detalle_turno(request: Request, id: int):
+    username, rol, response = require_login(request)
+    if response:
+        return response
+
+    empresa_id = get_empresa_id(request)
+
+    with engine.connect() as conn:
+        turno = conn.execute(text("""
+            SELECT tu.*, tr.nombre, tr.apellidos
+            FROM turnos tu
+            LEFT JOIN trabajadores tr
+                ON tr.id = tu.trabajador_id
+                AND tr.empresa_id = tu.empresa_id
+            WHERE tu.id = :id
+              AND tu.empresa_id = :empresa_id
+        """), {"id": id, "empresa_id": empresa_id}).mappings().first()
+
+    if not turno:
+        return RedirectResponse(url="/turnos", status_code=303)
+
+    return render_template(request, "turno_detalle.html", {
+        "turno": turno,
+        "username": username,
+        "rol": rol,
+        "active_page": "turnos"
+    })
+
+@app.post("/rutas/nueva")
+def crear_ruta(request: Request, trabajador_id: int = Form(...), fecha: str = Form(...), hora_inicio_jornada: str = Form(None), hora_fin_jornada: str = Form(None), total_horas: float = Form(None), observaciones_generales: str = Form(None)):
+    username, rol, response = require_login(request)
+    if response:
+        return response
+
+    empresa_id = get_current_empresa_id(request)
+
+    with engine.begin() as conn:
+        conn.execute(text("""
+            INSERT INTO rutas (
+                trabajador_id, fecha, hora_inicio_jornada, hora_fin_jornada,
+                total_horas, observaciones_generales, empresa_id
+            )
+            VALUES (
+                :trabajador_id, :fecha, :hora_inicio_jornada, :hora_fin_jornada,
+                :total_horas, :observaciones_generales, :empresa_id
+            )
+        """), {
+            "trabajador_id": trabajador_id,
+            "fecha": fecha,
+            "hora_inicio_jornada": hora_inicio_jornada,
+            "hora_fin_jornada": hora_fin_jornada,
+            "total_horas": total_horas,
+            "observaciones_generales": observaciones_generales,
+            "empresa_id": empresa_id
+        })
+
+    return RedirectResponse(url="/rutas", status_code=303)
+
+
+@app.get("/rutas/{id}", response_class=HTMLResponse)
+def detalle_ruta(request: Request, id: int):
+    username, rol, response = require_login(request)
+    if response:
+        return response
+
+    empresa_id = get_current_empresa_id(request)
+
+    with engine.connect() as conn:
+        ruta = conn.execute(text("""
+            SELECT r.*, t.nombre AS trabajador_nombre, t.apellidos AS trabajador_apellidos
+            FROM rutas r
+            LEFT JOIN trabajadores t
+                ON t.id = r.trabajador_id
+                AND t.empresa_id = r.empresa_id
+            WHERE r.id = :id
+              AND r.empresa_id = :empresa_id
+        """), {"id": id, "empresa_id": empresa_id}).mappings().first()
+
+        detalles = conn.execute(text("""
+            SELECT *
+            FROM rutas_detalle
+            WHERE ruta_id = :id
+            ORDER BY hora_inicio ASC, id ASC
+        """), {"id": id}).mappings().all()
+
+    if not ruta:
+        return RedirectResponse(url="/rutas", status_code=303)
+
+    return render_template(request, "ruta_detalle.html", {
+        "ruta": ruta,
+        "detalles": detalles,
+        "username": username,
+        "rol": rol,
+        "active_page": "rutas"
+    })
+
+
+@app.post("/crear-linea-ruta/{id}")
+def crear_linea_ruta(
+    request: Request,
+    id: int,
+    zona: str = Form(...),
+    hora_inicio: str = Form(...),
+    hora_fin: str = Form(...),
+    duracion_minutos: int = Form(None),
+    estado: str = Form("pendiente"),
+    observaciones: str = Form(None)
+):
+    username, rol, response = require_login(request)
+    if response:
+        return response
+
+    with engine.begin() as conn:
+        conn.execute(text("""
+            INSERT INTO rutas_detalle (
+                ruta_id, zona, hora_inicio, hora_fin,
+                duracion_minutos, estado, observaciones
+            )
+            VALUES (
+                :ruta_id, :zona, :hora_inicio, :hora_fin,
+                :duracion_minutos, :estado, :observaciones
+            )
+        """), {
+            "ruta_id": id,
+            "zona": zona,
+            "hora_inicio": hora_inicio,
+            "hora_fin": hora_fin,
+            "duracion_minutos": duracion_minutos,
+            "estado": estado,
+            "observaciones": observaciones
+        })
+
+    return RedirectResponse(url=f"/rutas/{id}", status_code=303)
+
+@app.post("/rutas/{id}/lineas/nueva")
+def crear_linea_ruta_vieja(
+    request: Request,
+    id: int,
+    zona: str = Form(...),
+    hora_inicio: str = Form(...),
+    hora_fin: str = Form(...),
+    duracion_minutos: int = Form(None),
+    estado: str = Form("pendiente"),
+    observaciones: str = Form(None)
+):
+    username, rol, response = require_login(request)
+    if response:
+        return response
+
+    with engine.begin() as conn:
+        conn.execute(text("""
+            INSERT INTO rutas_detalle (
+                ruta_id, zona, hora_inicio, hora_fin,
+                duracion_minutos, estado, observaciones
+            )
+            VALUES (
+                :ruta_id, :zona, :hora_inicio, :hora_fin,
+                :duracion_minutos, :estado, :observaciones
+            )
+        """), {
+            "ruta_id": id,
+            "zona": zona,
+            "hora_inicio": hora_inicio,
+            "hora_fin": hora_fin,
+            "duracion_minutos": duracion_minutos,
+            "estado": estado,
+            "observaciones": observaciones
+        })
+
+    return RedirectResponse(url=f"/rutas/{id}", status_code=303)
+
+
+
+@app.get("/horas", response_class=HTMLResponse)
+def ver_horas(request: Request):
+    username, rol, response = require_login(request)
+    if response:
+        return response
+
+    empresa_id = get_current_empresa_id(request)
+
+    with engine.begin() as conn:
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS horas_trabajadas (
+                id SERIAL PRIMARY KEY,
+                trabajador_id INTEGER,
+                empresa_id INTEGER,
+                fecha DATE,
+                hora_inicio TIME,
+                hora_fin TIME,
+                total_horas NUMERIC(10,2),
+                descripcion TEXT
+            )
+        """))
+
+        trabajadores = conn.execute(text("""
+            SELECT id, nombre, apellidos
+            FROM trabajadores
+            WHERE empresa_id = :empresa_id
+            ORDER BY nombre, apellidos
+        """), {"empresa_id": empresa_id}).mappings().all()
+
+        horas = conn.execute(text("""
+            SELECT h.*, t.nombre, t.apellidos
+            FROM horas_trabajadas h
+            LEFT JOIN trabajadores t
+                ON t.id = h.trabajador_id
+                AND t.empresa_id = h.empresa_id
+            WHERE h.empresa_id = :empresa_id
+            ORDER BY h.fecha DESC, h.id DESC
+        """), {"empresa_id": empresa_id}).mappings().all()
+
+    return render_template(request, "horas.html", {
+        "trabajadores": trabajadores,
+        "horas": horas,
+        "username": username,
+        "rol": rol,
+        "active_page": "horas"
+    })
+
+
+@app.post("/horas/nueva")
+def crear_horas(
+    request: Request,
+    trabajador_id: int = Form(...),
+    fecha: str = Form(...),
+    hora_inicio: str = Form(...),
+    hora_fin: str = Form(...),
+    total_horas: float = Form(...),
+    descripcion: str = Form(None)
+):
+    username, rol, response = require_login(request)
+    if response:
+        return response
+
+    empresa_id = get_current_empresa_id(request)
+
+    with engine.begin() as conn:
+        conn.execute(text("""
+            INSERT INTO horas_trabajadas (
+                trabajador_id, empresa_id, fecha, hora_inicio,
+                hora_fin, total_horas, descripcion
+            )
+            VALUES (
+                :trabajador_id, :empresa_id, :fecha, :hora_inicio,
+                :hora_fin, :total_horas, :descripcion
+            )
+        """), {
+            "trabajador_id": trabajador_id,
+            "empresa_id": empresa_id,
+            "fecha": fecha,
+            "hora_inicio": hora_inicio,
+            "hora_fin": hora_fin,
+            "total_horas": total_horas,
+            "descripcion": descripcion
+        })
+
+    return RedirectResponse(url="/horas", status_code=303)
+
+@app.get("/ausencias", response_class=HTMLResponse)
+def ver_ausencias(request: Request):
+    username, rol, response = require_login(request)
+    if response:
+        return response
+
+    empresa_id = get_current_empresa_id(request)
+
+    with engine.begin() as conn:
+        trabajadores = conn.execute(text("""
+            SELECT id, nombre, apellidos
+            FROM trabajadores
+            WHERE empresa_id = :empresa_id
+            ORDER BY nombre, apellidos
+        """), {"empresa_id": empresa_id}).mappings().all()
+
+        ausencias = conn.execute(text("""
+            SELECT a.*, t.nombre, t.apellidos
+            FROM ausencias a
+            LEFT JOIN trabajadores t
+                ON t.id = a.trabajador_id
+                AND t.empresa_id = a.empresa_id
+            WHERE a.empresa_id = :empresa_id
+            ORDER BY a.fecha_inicio DESC, a.id DESC
+        """), {"empresa_id": empresa_id}).mappings().all()
+
+    return render_template(request, "ausencias.html", {
+        "trabajadores": trabajadores,
+        "ausencias": ausencias,
+        "username": username,
+        "rol": rol,
+        "active_page": "ausencias"
+    })
+
+
+@app.post("/ausencias/nueva")
+def crear_ausencia(
+    request: Request,
+    trabajador_id: int = Form(...),
+    tipo: str = Form(...),
+    fecha_inicio: str = Form(...),
+    fecha_fin: str = Form(None),
+    motivo: str = Form(None)
+):
+    username, rol, response = require_login(request)
+    if response:
+        return response
+
+    empresa_id = get_current_empresa_id(request)
+
+    with engine.begin() as conn:
+        conn.execute(text("""
+            INSERT INTO ausencias (
+                trabajador_id, empresa_id, tipo,
+                fecha_inicio, fecha_fin, motivo
+            )
+            VALUES (
+                :trabajador_id, :empresa_id, :tipo,
+                :fecha_inicio, :fecha_fin, :motivo
+            )
+        """), {
+            "trabajador_id": trabajador_id,
+            "empresa_id": empresa_id,
+            "tipo": tipo,
+            "fecha_inicio": fecha_inicio,
+            "fecha_fin": fecha_fin,
+            "motivo": motivo
+        })
+
+    return RedirectResponse(url="/ausencias", status_code=303)
+
+@app.get("/productos", response_class=HTMLResponse)
+def ver_productos(request: Request):
+    username, rol, response = require_login(request)
+    if response:
+        return response
+
+    empresa_id = get_current_empresa_id(request)
+
+    with engine.begin() as conn:
+        productos = conn.execute(text("""
+            SELECT *
+            FROM productos
+            WHERE empresa_id = :empresa_id
+            ORDER BY id DESC
+        """), {"empresa_id": empresa_id}).mappings().all()
+
+    return render_template(request, "productos.html", {
+        "productos": productos,
+        "username": username,
+        "rol": rol,
+        "active_page": "productos"
+    })
+
+
+@app.post("/productos/nuevo")
+def crear_producto(
+    request: Request,
+    nombre: str = Form(...),
+    categoria: str = Form(None),
+    cantidad: int = Form(0),
+    unidad: str = Form(None),
+    descripcion: str = Form(None)
+):
+    username, rol, response = require_login(request)
+    if response:
+        return response
+
+    empresa_id = get_current_empresa_id(request)
+
+    with engine.begin() as conn:
+        conn.execute(text("""
+            INSERT INTO productos (
+                nombre, categoria, cantidad, unidad, descripcion, empresa_id
+            )
+            VALUES (
+                :nombre, :categoria, :cantidad, :unidad, :descripcion, :empresa_id
+            )
+        """), {
+            "nombre": nombre,
+            "categoria": categoria,
+            "cantidad": cantidad,
+            "unidad": unidad,
+            "descripcion": descripcion,
+            "empresa_id": empresa_id
+        })
+
+    return RedirectResponse(url="/productos", status_code=303)
+
+@app.get("/zonas", response_class=HTMLResponse)
+def ver_zonas(request: Request):
+    username, rol, response = require_login(request)
+    if response:
+        return response
+
+    empresa_id = get_current_empresa_id(request)
+
+    with engine.begin() as conn:
+        zonas = conn.execute(text("""
+            SELECT *
+            FROM zonas
+            WHERE empresa_id = :empresa_id
+            ORDER BY id DESC
+        """), {"empresa_id": empresa_id}).mappings().all()
+
+    return render_template(request, "zonas.html", {
+        "zonas": zonas,
+        "username": username,
+        "rol": rol,
+        "active_page": "zonas"
+    })
+
+
+@app.post("/zonas/nueva")
+def crear_zona(
+    request: Request,
+    nombre: str = Form(...),
+    descripcion: str = Form(None)
+):
+    username, rol, response = require_login(request)
+    if response:
+        return response
+
+    empresa_id = get_current_empresa_id(request)
+
+    with engine.begin() as conn:
+        conn.execute(text("""
+            INSERT INTO zonas (nombre, descripcion, empresa_id)
+            VALUES (:nombre, :descripcion, :empresa_id)
+        """), {
+            "nombre": nombre,
+            "descripcion": descripcion,
+            "empresa_id": empresa_id
+        })
+
+    return RedirectResponse(url="/zonas", status_code=303)
