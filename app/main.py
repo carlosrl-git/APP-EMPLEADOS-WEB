@@ -144,13 +144,14 @@ def send_reset_email(to_email: str, reset_token: str) -> bool:
     msg["To"] = to_email
 
     try:
-        server = smtplib.SMTP(smtp_host, int(smtp_port), timeout=20)
-        server.ehlo()
-        server.starttls()
-        server.ehlo()
-        server.login(smtp_user, smtp_password)
-        server.sendmail(from_email, [to_email], msg.as_string())
-        server.quit()
+        print(f"[CORREO] SMTP host={smtp_host} port={smtp_port} user={smtp_user} from={from_email} to={to_email}")
+        with smtplib.SMTP(smtp_host, int(smtp_port), timeout=45) as server:
+            server.set_debuglevel(1)
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
+            server.login(smtp_user, smtp_password)
+            server.sendmail(from_email, [to_email], msg.as_string())
         print(f"[CORREO] Email enviado correctamente a {to_email}")
         return True
     except Exception as e:
