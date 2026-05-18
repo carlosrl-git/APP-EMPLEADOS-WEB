@@ -248,8 +248,7 @@ def get_current_role(username: str, request: Request):
         return None
 
     with engine.begin() as conn:
-        user = conn.execute(
-            text("""
+        user = conn.execute(text("""
                 SELECT rol
                 FROM usuarios
                 WHERE username = :u
@@ -511,7 +510,7 @@ def ver_trabajadores(request: Request, q: str = "", departamento_id: str = ""):
         departamentos = conn.execute(
             text("""
                 SELECT id, nombre FROM departamentos WHERE activo = true ORDER BY nombre
-            """)).mappings().all()
+            """), {"empresa_id": get_empresa_id(request)}).mappings().all()
 
     return render_template(request, "trabajadores.html", {
         "username": username,
@@ -533,8 +532,7 @@ def nuevo_trabajador_page(request: Request):
     empresa_id = get_current_empresa_id(request)
 
     with engine.begin() as conn:
-        departamentos = conn.execute(
-            text("""
+        departamentos = conn.execute(text("""
                 SELECT id, nombre FROM departamentos WHERE activo = true ORDER BY nombre
             """)).mappings().all()
 
@@ -704,7 +702,7 @@ def editar_trabajador_page(request: Request, id: int):
         departamentos = conn.execute(
             text("""
                 SELECT id, nombre FROM departamentos WHERE activo = true ORDER BY nombre
-            """)).mappings().all()
+            """), {"empresa_id": get_empresa_id(request)}).mappings().all()
 
     return render_template(request, "trabajador_editar.html", {
         "username": username,
@@ -734,8 +732,7 @@ def editar_trabajador(
     dep_id = int(departamento_id) if str(departamento_id).strip() else None
 
     with engine.begin() as conn:
-        conn.execute(
-            text("""
+        conn.execute(text("""
                 UPDATE trabajadores SET
                     nombre = :nombre,
                     apellidos = :apellidos,
@@ -834,7 +831,7 @@ def nueva_incidencia_page(request: Request):
                 FROM trabajadores
                 WHERE empresa_id = :empresa_id
                 ORDER BY nombre, apellidos
-            """)).mappings().all()
+            """), {"empresa_id": get_empresa_id(request)}).mappings().all()
 
     return render_template(request, "incidencia_nueva.html", {
         "username": username,
@@ -863,8 +860,7 @@ def guardar_incidencia(
         trabajador = int(trabajador_id) if str(trabajador_id).strip() else None
 
         with engine.begin() as conn:
-            conn.execute(
-                text("""
+            conn.execute(text("""
                     INSERT INTO incidencias
                     (empresa_id, descripcion, trabajador_id, estado)
                     VALUES (:empresa_id, :descripcion, :trabajador_id, :estado)
@@ -971,7 +967,7 @@ def nueva_tarea_page(request: Request):
                 FROM trabajadores
                 WHERE empresa_id = :empresa_id
                 ORDER BY nombre, apellidos
-            """)).mappings().all()
+            """), {"empresa_id": get_empresa_id(request)}).mappings().all()
 
     return render_template(request, "tarea_nueva.html", {
         "username": username,
@@ -1002,8 +998,7 @@ def guardar_tarea(
 
     try:
         with engine.begin() as conn:
-            conn.execute(
-                text("""
+            conn.execute(text("""
                     INSERT INTO tareas (
                         empresa_id, trabajador_id, titulo, descripcion,
                         prioridad, estado, fecha_asignacion, fecha_vencimiento
@@ -1037,7 +1032,7 @@ def guardar_tarea(
                     FROM trabajadores
                     WHERE empresa_id = :empresa_id
                     ORDER BY nombre, apellidos
-                """)).mappings().all()
+                """), {"empresa_id": get_empresa_id(request)}).mappings().all()
 
         return render_template(request, "tarea_nueva.html", {
             "username": username,
@@ -1063,8 +1058,7 @@ def cambiar_estado_tarea(request: Request, id: int, nuevo_estado: str):
     empresa_id = get_current_empresa_id(request)
 
     with engine.begin() as conn:
-        conn.execute(
-            text("""
+        conn.execute(text("""
                 UPDATE tareas
                 SET estado = :estado
                 WHERE id = :id
@@ -1104,7 +1098,7 @@ def editar_tarea_page(request: Request, id: int):
                 FROM trabajadores
                 WHERE empresa_id = :empresa_id
                 ORDER BY nombre, apellidos
-            """)).mappings().all()
+            """), {"empresa_id": get_empresa_id(request)}).mappings().all()
 
     return render_template(request, "tarea_editar.html", {
         "username": username,
@@ -1134,8 +1128,7 @@ def editar_tarea(
     empresa_id = get_current_empresa_id(request)
 
     with engine.begin() as conn:
-        conn.execute(
-            text("""
+        conn.execute(text("""
                 UPDATE tareas SET
                     titulo = :titulo,
                     descripcion = :descripcion,
@@ -1449,7 +1442,7 @@ def exportar_rutas_excel(request: Request):
                 AND t.empresa_id = r.empresa_id
             WHERE r.empresa_id = :empresa_id
             ORDER BY r.fecha DESC, r.hora_inicio_jornada ASC, r.id DESC
-        """)).mappings().all()
+        """), {"empresa_id": get_empresa_id(request)}).mappings().all()
 
     wb = Workbook()
     ws = wb.active
@@ -2066,7 +2059,7 @@ def exportar_productos_excel(request: Request):
                 SELECT id, nombre, categoria, stock
                 FROM productos
                 WHERE empresa_id = :empresa_id
-                ORDER BY id DESC""")).mappings().all()
+                ORDER BY id DESC"""), {"empresa_id": get_empresa_id(request)}).mappings().all()
 
     wb = Workbook()
     ws = wb.active
@@ -2157,8 +2150,7 @@ def exportar_tareas_excel(request: Request):
     empresa_id = get_current_empresa_id(request)
 
     with engine.begin() as conn:
-        tareas = conn.execute(
-            text("""
+        tareas = conn.execute(text("""
                 SELECT ta.id, ta.titulo, ta.descripcion, ta.estado, ta.prioridad,
                        ta.fecha_asignacion, ta.fecha_vencimiento,
                        tr.nombre, tr.apellidos
@@ -2168,7 +2160,7 @@ def exportar_tareas_excel(request: Request):
                     AND tr.empresa_id = ta.empresa_id
                 WHERE ta.empresa_id = :empresa_id
                 ORDER BY ta.fecha_asignacion DESC, ta.id DESC
-            """)).mappings().all()
+            """), {"empresa_id": get_empresa_id(request)}).mappings().all()
 
     wb = Workbook()
     ws = wb.active
@@ -2268,14 +2260,13 @@ def ver_departamentos(request: Request):
     empresa_id = get_current_empresa_id(request)
 
     with engine.begin() as conn:
-        departamentos = conn.execute(
-            text("""
+        departamentos = conn.execute(text("""
                 SELECT id, nombre
                 FROM departamentos
                 WHERE activo = true
                 AND empresa_id = :empresa_id
                 ORDER BY nombre ASC
-            """)).mappings().all()
+            """), {"empresa_id": get_empresa_id(request)}).mappings().all()
 
     return render_template(request, "departamentos.html", {
         "username": username,
