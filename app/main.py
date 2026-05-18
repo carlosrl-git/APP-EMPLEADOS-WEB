@@ -534,7 +534,7 @@ def nuevo_trabajador_page(request: Request):
     with engine.begin() as conn:
         departamentos = conn.execute(text("""
                 SELECT id, nombre FROM departamentos WHERE activo = true ORDER BY nombre
-            """)).mappings().all()
+            """), {"empresa_id": empresa_id}).mappings().all()
 
     return render_template(request, "trabajador_nuevo.html", {
         "username": username,
@@ -566,8 +566,7 @@ def guardar_trabajador_2(
         dep_id = int(departamento_id) if str(departamento_id).strip() else None
 
         with engine.begin() as conn:
-            conn.execute(
-                text("""
+            conn.execute(text("""
                     INSERT INTO trabajadores
                     (empresa_id, nombre, apellidos, email, telefono, puesto, departamento_id, activo)
                     VALUES (:empresa_id, :nombre, :apellidos, :email, :telefono, :puesto, :departamento_id, true)
@@ -2286,7 +2285,7 @@ def ai_logs(request: Request):
 
     with engine.begin() as conn:
         logs = conn.execute(
-            text("""SELECT id, usuario, accion, detalle, fecha FROM ai_logs ORDER BY id DESC LIMIT 100""")).mappings().all()
+            text("""SELECT id, usuario, accion, detalle, fecha FROM ai_logs ORDER BY id DESC LIMIT 100"""), {"empresa_id": empresa_id}).mappings().all()
 
     return render_template(request, "ai_logs.html", {
         "logs": logs,
