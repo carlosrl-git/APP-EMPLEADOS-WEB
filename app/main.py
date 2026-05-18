@@ -2697,3 +2697,262 @@ def eliminar_ticket(id: int, request: Request):
     return RedirectResponse(url="/tickets", status_code=303)
 
 
+
+
+# ==========================================================
+# TURNOS - CREAR Y EXPORTAR
+# ==========================================================
+
+@app.get("/turnos/nuevo", response_class=HTMLResponse)
+def nuevo_turno_page(request: Request):
+    username, rol, response = require_admin(request)
+    if response:
+        return response
+
+    empresa_id = get_current_empresa_id(request)
+
+    with engine.begin() as conn:
+        trabajadores = conn.execute(text("""
+            SELECT id, nombre, apellidos
+            FROM trabajadores
+            WHERE empresa_id = :empresa_id
+              AND activo = TRUE
+            ORDER BY nombre, apellidos
+        """), {"empresa_id": empresa_id}).mappings().all()
+
+        zonas = conn.execute(text("""
+            SELECT id, nombre
+            FROM zonas
+            WHERE empresa_id = :empresa_id
+              AND activo = TRUE
+            ORDER BY nombre
+        """), {"empresa_id": empresa_id}).mappings().all()
+
+    return render_template(request, "turno_nuevo.html", {
+        "trabajadores": trabajadores,
+        "zonas": zonas,
+        "username": username,
+        "rol": rol,
+        "active_page": "turnos"
+    })
+
+
+@app.post("/turnos/nuevo")
+async def crear_turno(request: Request):
+    username, rol, response = require_admin(request)
+    if response:
+        return response
+
+    from datetime import datetime, timedelta
+
+    empresa_id = get_current_empresa_id(request)
+    form = await request.form()
+
+    trabajador_id = int(form.get("trabajador_id") or 0)
+    zona_raw = form.get("zona_id") or None
+    zona_id = int(zona_raw) if zona_raw else None
+    fecha = form.get("fecha")
+    inicio_jornada = form.get("inicio_jornada")
+    fin_jornada = form.get("fin_jornada")
+    estado = form.get("estado") or "pendiente"
+    observaciones = form.get("observaciones") or ""
+
+    total_horas = 0
+
+    try:
+        h1 = datetime.strptime(inicio_jornada, "%H:%M")
+        h2 = datetime.strptime(fin_jornada, "%H:%M")
+
+        if h2 < h1:
+            h2 = h2 + timedelta(days=1)
+
+        total_horas = round((h2 - h1).total_seconds() / 3600, 2)
+    except Exception:
+        total_horas = 0
+
+    with engine.begin() as conn:
+        conn.execute(text("""
+            INSERT INTO turnos (
+                trabajador_id,
+                zona_id,
+                fecha,
+                inicio_jornada,
+                fin_jornada,
+                hora_inicio_jornada,
+                hora_fin_jornada,
+                hora_inicio,
+                hora_fin,
+                hora_entrada,
+                hora_salida,
+                total_horas,
+                observaciones,
+                observaciones_generales,
+                estado,
+                tipo,
+                activo,
+                empresa_id,
+                created_at,
+                updated_at
+            )
+            VALUES (
+                :trabajador_id,
+                :zona_id,
+                :fecha,
+                :inicio_jornada,
+                :fin_jornada,
+                :inicio_jornada,
+                :fin_jornada,
+                :inicio_jornada,
+                :fin_jornada,
+                :inicio_jornada,
+                :fin_jornada,
+                :total_horas,
+                :observaciones,
+                :observaciones,
+                :estado,
+                'jornada',
+                TRUE,
+                :empresa_id,
+                CURRENT_TIMESTAMP,
+                CURRENT_TIMESTAMP
+            )
+        """), {
+            "trabajador_id": trabajador_id,
+            "zona_id": zona_id,
+            "fecha": fecha,
+            "inicio_jornada": inicio_jornada,
+            "fin_jornada": fin_jornada,
+            "total_horas": total_horas,
+            "observaciones": observaciones,
+            "estado": estado,
+            "empresa_id": empresa_id
+        })
+
+    return RedirectResponse(url="/turnos", status_code=303)
+
+
+@app.get("/turnos/exportar")
+def exportar_turnos_excel(request: Request):
+    username, rol, response = require_login(request)
+    if response:
+        return response
+
+    from io import BytesIO
+    from datetime import datetime
+    from starlette.responses import StreamingResponse
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+
+    empresa_id = get_current_empresa_id(request)
+
+    with engine.begin() as conn:
+        turnos = conn.execute(text("""
+            SELECT 
+                tu.id,
+                tu.fecha,
+                tu.inicio_jornada,
+                tu.fin_jornada,
+                tu.total_horas,
+                tu.estado,
+                tu.tipo,
+                tu.observaciones_generales,
+                tr.nombre,
+                tr.apellidos,
+                z.nombre AS zona_nombre
+            FROM turnos tu
+            LEFT JOIN trabajadores tr
+                ON tr.id = tu.trabajador_id
+                AND tr.empresa_id = tu.empresa_id
+            LEFT JOIN zonas z
+                ON z.id = tu.zona_id
+                AND z.empresa_id = tu.empresa_id
+            WHERE tu.empresa_id = :empresa_id
+            ORDER BY tu.fecha DESC, tu.id DESC
+        """), {"empresa_id": empresa_id}).mappings().all()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Turnos"
+
+    headers = [
+        "ID",
+        "Fecha",
+        "Trabajador",
+        "Zona",
+        "Inicio jornada",
+        "Fin jornada",
+        "Total horas",
+        "Estado",
+        "Tipo",
+        "Observaciones"
+    ]
+
+    ws.append(headers)
+
+    header_fill = PatternFill("solid", fgColor="B30000")
+    header_font = Font(color="FFFFFF", bold=True)
+    border = Border(
+        left=Side(style="thin", color="333333"),
+        right=Side(style="thin", color="333333"),
+        top=Side(style="thin", color="333333"),
+        bottom=Side(style="thin", color="333333")
+    )
+
+    for cell in ws[1]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center")
+        cell.border = border
+
+    for t in turnos:
+        trabajador = f"{t.get('nombre') or ''} {t.get('apellidos') or ''}".strip()
+
+        ws.append([
+            t.get("id"),
+            str(t.get("fecha") or ""),
+            trabajador,
+            t.get("zona_nombre") or "",
+            str(t.get("inicio_jornada") or ""),
+            str(t.get("fin_jornada") or ""),
+            float(t.get("total_horas") or 0),
+            t.get("estado") or "",
+            t.get("tipo") or "",
+            t.get("observaciones_generales") or ""
+        ])
+
+    for row in ws.iter_rows():
+        for cell in row:
+            cell.border = border
+            cell.alignment = Alignment(vertical="center")
+
+    widths = {
+        "A": 8,
+        "B": 16,
+        "C": 30,
+        "D": 22,
+        "E": 18,
+        "F": 18,
+        "G": 14,
+        "H": 16,
+        "I": 16,
+        "J": 45,
+    }
+
+    for col, width in widths.items():
+        ws.column_dimensions[col].width = width
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    filename = f"turnos_{datetime.now():%Y%m%d_%H%M%S}.xlsx"
+
+    headers_response = {
+        "Content-Disposition": f'attachment; filename="{filename}"'
+    }
+
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers=headers_response
+    )
