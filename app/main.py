@@ -2650,8 +2650,19 @@ def crear_ticket_web(
     if prioridad not in {"baja", "media", "alta", "urgente"}:
         prioridad = "media"
 
+    ticket_data = {
+        "empresa_id": empresa_id,
+        "nombre_usuario": nombre_usuario,
+        "email_usuario": email_usuario,
+        "titulo": titulo,
+        "descripcion": descripcion,
+        "tipo": tipo,
+        "prioridad": prioridad,
+        "estado": "abierto",
+    }
+
     with engine.begin() as conn:
-        conn.execute(
+        ticket_id = conn.execute(
             text("""
                 INSERT INTO tickets (
                     empresa_id, nombre_usuario, email_usuario, titulo, descripcion,
@@ -2661,17 +2672,16 @@ def crear_ticket_web(
                     :empresa_id, :nombre_usuario, :email_usuario, :titulo, :descripcion,
                     :tipo, :prioridad, 'abierto', CURRENT_TIMESTAMP
                 )
+                RETURNING id, fecha_creacion
             """),
-            {
-                "empresa_id": empresa_id,
-                "nombre_usuario": nombre_usuario,
-                "email_usuario": email_usuario,
-                "titulo": titulo,
-                "descripcion": descripcion,
-                "tipo": tipo,
-                "prioridad": prioridad,
-            },
-        )
+            ticket_data,
+        ).mappings().first()
+
+    if ticket_id:
+        ticket_data["id"] = ticket_id["id"]
+        ticket_data["fecha_creacion"] = ticket_id["fecha_creacion"]
+
+    send_ticket_email(ticket_data)
 
     return RedirectResponse(url="/tickets?ok=1", status_code=303)
 
